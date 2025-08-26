@@ -1,0 +1,160 @@
+.status-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.metrics-section,
+.tests-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.metrics-section h3,
+.tests-section h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.metric-card {
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid;
+}
+
+.metric-card.good {
+  background-color: #f0fff4;
+  border-color: #68d391;
+}
+
+.metric-card.warning {
+  background-color: #fffbf0;
+  border-color: #f6ad55;
+}
+
+.metric-card.error {
+  background-color: #fff5f5;
+  border-color: #fc8181;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+}
+
+.metric-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.tests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.test-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background-color: #f7fafc;
+  border-left: 4px solid;
+}
+
+.test-item.passed {
+  border-left-color: #48bb78;
+}
+
+.test-item.running {
+  border-left-color: #4299e1;
+  animation: pulse-bg 2s infinite;
+}
+
+.test-item.pending {
+  border-left-color: #ed8936;
+}
+
+.test-item.failed {
+  border-left-color: #f56565;
+}
+
+.test-name {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.test-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.passed {
+  background-color: #c6f6d5;
+  color: #22543d;
+}
+
+.status-badge.running {
+  background-color: #bee3f8;
+  color: #2a4365;
+}
+
+.status-badge.pending {
+  background-color: #feebc8;
+  color: #7b341e;
+}
+
+.status-badge.failed {
+  background-color: #fed7d7;
+  color: #742a2a;
+}
+
+.test-time {
+  font-size: 0.8rem;
+  color: #718096;
+  min-width: 60px;
+  text-align: right;
+}
+
+@keyframes pulse-bg {
+  0%, 100% {
+    background-color: #f7fafc;
+  }
+  50% {
+    background-color: #edf2f7;
+  }
+}
+
+@media (max-width: 768px) {
+  .status-panel {
+    grid-template-columns: 1fr;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
