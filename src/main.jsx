@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import AccommodationGame from './Task1AccommodationGame.jsx';
+import AccommodationGame from './AccommodationGame.jsx';
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
