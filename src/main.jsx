@@ -1,10 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Task1AccommodationGame from "./Task1AccommodationGame.jsx";
+import AccommodationGame from './Task1AccommodationGame.jsx';
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <Task1AccommodationGame
+    <AccommodationGame
       sessionId="demo-session"
       onEvent={(e) => console.log("EVENT", e)}
       onScore={(s) => console.log("SCORE", s)}
