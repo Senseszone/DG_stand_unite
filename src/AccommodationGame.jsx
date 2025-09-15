@@ -312,7 +312,7 @@ export default function AccommodationGame(props) {
           color: "#fff",
         }}
       >
-        <div style={{ fontSize: 20, fontWeight: 600 }}>Task 1 – Přeostření</div>
+        <div style={{ fontSize: 20, fontWeight: 600 }}>Přeostření</div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId}
         </div>
@@ -324,33 +324,54 @@ export default function AccommodationGame(props) {
           gap: 12,
           color: "#fff",
           alignItems: "center",
+          height: "50px",
         }}
       >
         {!running ? (
           <button
             onClick={start}
+            className="btn btn-primary"
             style={{
               padding: "8px 16px",
               borderRadius: 16,
               background: "#fff",
               color: "#000",
-              border: "none",
+              border: "4px solid #000",
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "200px",
+              height: "100px",
+              zIndex: 100,
+              opacity: 0.9,
+              fontSize: 24,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              userSelect: "none",
             }}
           >
             Start
           </button>
         ) : (
           <button
+            className="btn "
             onClick={finish}
             style={{
               padding: "8px 16px",
               borderRadius: 16,
               background: "#fff",
               color: "#000",
-              border: "none",
+              border: "4px solid #000",
+              cursor: "pointer",
+              userSelect: "none",
+              fontWeight: 600,
             }}
           >
-            Ukončit
+            Stop
           </button>
         )}
         <div>

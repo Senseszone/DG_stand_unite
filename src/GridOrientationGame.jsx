@@ -8,6 +8,7 @@ export default function GridOrientationGame({
                                               emitScore,
                                             }) {
   const [running, setRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [grid, setGrid] = useState([]); // stav čtverců (rozsvíceno/není)
   const [errors, setErrors] = useState(0);
   const [outsideTouches, setOutsideTouches] = useState(0);
@@ -47,6 +48,18 @@ export default function GridOrientationGame({
       ts: now,
       data: { sessionId, taskId },
     });
+
+    let interval;
+    let timeRemaining = 60;
+    const tick = () => {
+      timeRemaining = timeRemaining - 1;
+      setTimeLeft(timeRemaining);
+      if (timeRemaining <= 0) {
+        clearInterval(interval);
+      }
+    };
+
+    interval = setInterval(tick, 1000);
 
     // automatické zastavení po 60s
     setTimeout(() => {
@@ -192,27 +205,67 @@ export default function GridOrientationGame({
     >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ fontSize: 20, fontWeight: 600 }}>
-          Task 3 – Vizuo-motorická orientace
+          Vizuo-motorická orientace
         </div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId}
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          color: "#fff",
+          alignItems: "center",
+          height: "50px",
+        }}
+      >
         {!running ? (
           <button
             onClick={start}
-            style={{ padding: "8px 16px", borderRadius: 8 }}
+            className="btn btn-primary"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 16,
+              background: "#fff",
+              color: "#000",
+              border: "4px solid #000",
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "200px",
+              height: "100px",
+              zIndex: 100,
+              opacity: 0.9,
+              fontSize: 24,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
           >
             Start (1 min)
           </button>
         ) : (
           <button
+            className="btn"
             onClick={stop}
-            style={{ padding: "8px 16px", borderRadius: 8 }}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 16,
+              background: "#fff",
+              color: "#000",
+              border: "4px solid #000",
+              cursor: "pointer",
+              userSelect: "none",
+              fontWeight: 600,
+            }}
           >
-            Stop
+            Stop ( {timeLeft}s )
           </button>
         )}
         <div>Rozsvíceno: {grid.filter((g) => g).length}</div>

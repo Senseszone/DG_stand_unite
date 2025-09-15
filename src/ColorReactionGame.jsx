@@ -394,7 +394,7 @@ export default function ColorReactionGame({
     >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ fontSize: 20, fontWeight: 600 }}>
-          Task 5 – Reakční barevná pole
+          Reakční barevná pole
         </div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId} · limit:{" "}
@@ -403,37 +403,64 @@ export default function ColorReactionGame({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          height: "50px",
+        }}
+      >
         {!running ? (
           <button
             onClick={start}
+            className="btn btn-primary"
             style={{
               padding: "8px 16px",
-              borderRadius: 8,
+              borderRadius: 16,
               background: "#fff",
               color: "#000",
-              border: "none",
+              border: "4px solid #000",
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "200px",
+              height: "100px",
+              zIndex: 100,
+              opacity: 0.9,
+              fontSize: 24,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              userSelect: "none",
             }}
           >
             Start
           </button>
         ) : (
           <button
+            className="btn "
             onClick={stop}
             style={{
               padding: "8px 16px",
-              borderRadius: 8,
+              borderRadius: 16,
               background: "#fff",
               color: "#000",
-              border: "none",
+              border: "4px solid #000",
+              cursor: "pointer",
+              userSelect: "none",
+              fontWeight: 600,
             }}
           >
             Stop
           </button>
         )}
-        <div>Hits: {hitsRef.current}</div>
-        <div>Errors: {errorsRef.current}</div>
-        <div>Misses: {missesRef.current}</div>
+        <div>Správně: {hitsRef.current}</div>
+        <div>Chyby: {errorsRef.current}</div>
+        <div>Zmeškáno: {missesRef.current}</div>
       </div>
 
       <div
