@@ -170,7 +170,6 @@ export default function AccommodationGame(props) {
     (letter, ev) => {
       if (!running) return;
       const isCorrect = letter === currentLetter;
-
       const stage = stageRef.current;
       const rectStage = stage?.getBoundingClientRect();
       const btn = ev.currentTarget;
