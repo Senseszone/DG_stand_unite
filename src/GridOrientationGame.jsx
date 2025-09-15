@@ -194,7 +194,7 @@ export default function GridOrientationGame({
         <div style={{ fontSize: 20, fontWeight: 600 }}>
           Task 3 – Vizuo-motorická orientace
         </div>
-        <div style={{ fontSize: 12, opacity: 0.85 }}>
+        <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId}
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function GridOrientationGame({
         ))}
       </div>
 
-      <div style={{ fontSize: 12, opacity: 0.85 }}>
+      <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
         Dotkněte se co nejvíce čtverců během 1 minuty. Vyhýbejte se opakovaným a
         mimo mřížku.
       </div>

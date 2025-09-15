@@ -170,6 +170,7 @@ export default function AccommodationGame(props) {
     (letter, ev) => {
       if (!running) return;
       const isCorrect = letter === currentLetter;
+
       const stage = stageRef.current;
       const rectStage = stage?.getBoundingClientRect();
       const btn = ev.currentTarget;
@@ -273,7 +274,7 @@ export default function AccommodationGame(props) {
               height: size,
               borderRadius: 16,
               border: `4px solid ${styles.red}`,
-              background: isDone ? styles.green : styles.white,
+              background: isDone ? styles.green : styles.green,
               color: styles.black,
               fontSize: Math.max(24, Math.floor(size * 0.4)),
               fontWeight: 700,
@@ -312,7 +313,7 @@ export default function AccommodationGame(props) {
         }}
       >
         <div style={{ fontSize: 20, fontWeight: 600 }}>Task 1 – Přeostření</div>
-        <div style={{ fontSize: 12, opacity: 0.85 }}>
+        <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId}
         </div>
       </div>
@@ -407,7 +408,9 @@ export default function AccommodationGame(props) {
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: "#fff", opacity: 0.85 }}>
+      <div
+        style={{ fontSize: 12, color: "#fff", opacity: 0.85, display: "none" }}
+      >
         Sekvence: A, P, B, R, K, H, L, M, N, R · klikni ve správném pořadí.
         Metriky: Completion_Time, Reaction_Time_List/Avg/Best, Errors, Accuracy,
         Touch XY, Distance_Error.

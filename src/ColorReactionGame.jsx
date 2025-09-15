@@ -396,7 +396,7 @@ export default function ColorReactionGame({
         <div style={{ fontSize: 20, fontWeight: 600 }}>
           Task 5 – Reakční barevná pole
         </div>
-        <div style={{ fontSize: 12, opacity: 0.85 }}>
+        <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId} · limit:{" "}
           {reactionWindowMsRef.current} ms · shown: {totalShownRef.current}/
           {TOTAL_STIMULI}
@@ -481,7 +481,7 @@ export default function ColorReactionGame({
         })}
       </div>
 
-      <div style={{ fontSize: 12, opacity: 0.85 }}>
+      <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
         Zelený = kliknout rychle, červený = neklikat. Celkem {TOTAL_STIMULI}{" "}
         podnětů. Doba zobrazení 500–1500 ms, reakční limit adaptivní.
       </div>
