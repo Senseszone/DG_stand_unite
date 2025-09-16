@@ -96,6 +96,7 @@ export default function GridOrientationGame({
     });
 
     emitScore?.({
+      sessionId,
       taskId,
       durationMs,
       metrics: {

@@ -13,8 +13,8 @@ import React, { useCallback, useRef, useState } from "react";
 const SEQUENCE = "51201945278910736431025892173883412675".split("").map(Number);
 
 export default function SaccadicSumGame({
-                                          sessionId = "demo-session",
-                                          taskId = "saccadic-sum-v1",
+                                          sessionId,
+                                          taskId,
                                           emitEvent,
                                           emitScore,
                                         }) {

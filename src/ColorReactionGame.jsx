@@ -72,7 +72,6 @@ export default function ColorReactionGame({
   }, []);
 
   const spawnStimulus = useCallback(() => {
-    console.log("spawnStimulus");
     if (totalShownRef.current >= TOTAL_STIMULI) return;
     const color = Math.random() < 0.6 ? "green" : "red"; // víc GO než NO-GO
     const idx = pickIndex();
@@ -90,7 +89,6 @@ export default function ColorReactionGame({
     const timeoutId = window.setTimeout(() => {
       setStimuli((prev) => {
         const stim = prev.find((s) => s.id === id);
-        console.log(stim);
         if (!stim) return prev;
         // vypršel
         // pokud byl zelený a nebyl zasažen → miss
@@ -105,7 +103,6 @@ export default function ColorReactionGame({
         const next = prev.filter((s) => s.id !== id);
         // doplň další, pokud je prostor a stále běží
         if (totalShownRef.current < TOTAL_STIMULI) {
-          console.log("spawn");
           queueSpawn(); // postupně udržujeme aktivních do MAX_ACTIVE
         }
         // pokud skončily všechny a už jsme ukázali 50, ukonči
@@ -210,6 +207,7 @@ export default function ColorReactionGame({
 
     emitScore?.({
       taskId,
+      sessionId,
       durationMs,
       metrics: {
         completionTimeSec: Math.round((durationMs / 1000) * 100) / 100,

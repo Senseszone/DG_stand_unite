@@ -74,7 +74,7 @@ function distance(a, b) {
 
 // --- standalone React JSX komponenta (hra) ---
 export default function AccommodationGame(props) {
-  const taskId = props.taskId || "accommodation-apbrkhlmnr-v1";
+  const taskId = props.taskId || "accommodation";
   const { sessionId, config, emitEvent, emitScore } = useISensesBridge(props);
 
   const spacing = Number(config?.spacingPx ?? 24);

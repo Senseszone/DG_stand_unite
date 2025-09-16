@@ -7,7 +7,12 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
  * každý blok = 10 sekvencí
  * sekvence startuje na 3 prvcích, +1 při úspěchu, -1 při chybě (meze 2–7)
  */
-export default function SpamperceptionBlocks({ sessionId, taskId = "spamperception-blocks-v1", emitEvent, emitScore }) {
+export default function SpamperceptionBlocks({
+                                               sessionId,
+                                               taskId = "spamperception-blocks-v1",
+                                               emitEvent,
+                                               emitScore,
+                                             }) {
   const GRID = 10;
   const CELLS = GRID * GRID;
 
@@ -58,20 +63,20 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
       setPhase("present");
       let t = 0;
       arr.forEach((cell, i) => {
-        timersRef.current.push(
-          setTimeout(() => setLitIdx(cell), t)
-        );
+        timersRef.current.push(setTimeout(() => setLitIdx(cell), t));
         t += ON_MS;
-        timersRef.current.push(
-          setTimeout(() => setLitIdx(null), t)
-        );
+        timersRef.current.push(setTimeout(() => setLitIdx(null), t));
         t += GAP_MS;
       });
       timersRef.current.push(
         setTimeout(() => {
           setPhase("respond");
           setReplayPos(0);
-          emitEvent?.({ type: "SEQ_PRESENTED", ts: Date.now(), data: { block: MODES[blockIdx], len: arr.length } });
+          emitEvent?.({
+            type: "SEQ_PRESENTED",
+            ts: Date.now(),
+            data: { block: MODES[blockIdx], len: arr.length },
+          });
         }, t)
       );
     },
@@ -99,17 +104,23 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
     setLitIdx(null);
     startTsRef.current = null;
     logsRef.current = [];
-  })
+  });
 
   // vyhodnocení trialu
   const finishTrial = useCallback(
     (ok) => {
       const mode = MODES[blockIdx];
       if (ok) {
-        spanMaxRef.current[mode] = Math.max(spanMaxRef.current[mode], seq.length);
+        spanMaxRef.current[mode] = Math.max(
+          spanMaxRef.current[mode],
+          seq.length
+        );
       }
       // nastav novou délku
-      const nextLen = Math.max(MIN_LEN, Math.min(MAX_LEN, seqLen + (ok ? 1 : -1)));
+      const nextLen = Math.max(
+        MIN_LEN,
+        Math.min(MAX_LEN, seqLen + (ok ? 1 : -1))
+      );
       setSeqLen(nextLen);
       if (trialIdx + 1 >= SEQS_PER_BLOCK) {
         // blok hotov
@@ -118,7 +129,9 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
           emitScore?.({
             taskId,
             sessionId,
-            durationMs: startTsRef.current ? Date.now() - startTsRef.current : 0,
+            durationMs: startTsRef.current
+              ? Date.now() - startTsRef.current
+              : 0,
             metrics: {
               spanMax_digits: spanMaxRef.current.digits,
               spanMax_letters: spanMaxRef.current.letters,
@@ -163,13 +176,21 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
     });
     if (correct) {
       if (replayPos + 1 >= seq.length) {
-        emitEvent?.({ type: "RESP_OK", ts: Date.now(), data: { block: MODES[blockIdx], len: seq.length } });
+        emitEvent?.({
+          type: "RESP_OK",
+          ts: Date.now(),
+          data: { block: MODES[blockIdx], len: seq.length },
+        });
         finishTrial(true);
       } else {
         setReplayPos(replayPos + 1);
       }
     } else {
-      emitEvent?.({ type: "RESP_ERR", ts: Date.now(), data: { block: MODES[blockIdx], pos: replayPos } });
+      emitEvent?.({
+        type: "RESP_ERR",
+        ts: Date.now(),
+        data: { block: MODES[blockIdx], pos: replayPos },
+      });
       finishTrial(false);
     }
   };
@@ -185,7 +206,11 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
     setSeqLen(START_LEN);
     setPhase("between");
     startTsRef.current = Date.now();
-    emitEvent?.({ type: "START", ts: startTsRef.current, data: { sessionId, taskId } });
+    emitEvent?.({
+      type: "START",
+      ts: startTsRef.current,
+      data: { sessionId, taskId },
+    });
     setTimeout(() => startTrial(START_LEN), 500);
   };
 
@@ -214,44 +239,65 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
   }, []);
 
   return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", background: "#1A4E8A", color: "#fff", padding: 16, gap: 12 }}>
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: "#1A4E8A",
+        color: "#fff",
+        padding: 16,
+        gap: 12,
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600 }}>Spam perception blocks</div>
+        <div style={{ fontSize: 20, fontWeight: 600 }}>
+          Spam perception blocks
+        </div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
-          session: {sessionId || "–"} · block: {blockIdx + 1}/{MODES.length} ({MODES[blockIdx]})
+          session: {sessionId || "–"} · block: {blockIdx + 1}/{MODES.length} (
+          {MODES[blockIdx]})
         </div>
       </div>
 
-      <div   style={{
-        display: "flex",
-        gap: 12,
-        alignItems: "center",
-        height: "50px",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          height: "50px",
+        }}
+      >
         {!running ? (
-          <button onClick={start}  className="btn btn-primary"
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 16,
-                    background: "#fff",
-                    color: "#000",
-                    border: "4px solid #000",
-                    position: "fixed",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: "200px",
-                    height: "100px",
-                    zIndex: 100,
-                    opacity: 0.9,
-                    fontSize: 24,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    userSelect: "none",
-                  }}>Start</button>
+          <button
+            onClick={start}
+            className="btn btn-primary"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 16,
+              background: "#fff",
+              color: "#000",
+              border: "4px solid #000",
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "200px",
+              height: "100px",
+              zIndex: 100,
+              opacity: 0.9,
+              fontSize: 24,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            Start
+          </button>
         ) : (
           <button
             className="btn "
@@ -270,21 +316,27 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
             Stop
           </button>
         )}
-        <div>Blok {blockIdx + 1}/{MODES.length}</div>
-        <div>Pokus {trialIdx + 1}/{SEQS_PER_BLOCK}</div>
+        <div>
+          Blok {blockIdx + 1}/{MODES.length}
+        </div>
+        <div>
+          Pokus {trialIdx + 1}/{SEQS_PER_BLOCK}
+        </div>
         <div>Délka {seqLen}</div>
       </div>
 
-      <div style={{
-        flex: 1,
-        display: "grid",
-        gridTemplateColumns: `repeat(${GRID}, 1fr)`,
-        gridTemplateRows: `repeat(${GRID}, 1fr)`,
-        gap: 4,
-        background: "#0D2B55",
-        borderRadius: 12,
-        padding: 8,
-      }}>
+      <div
+        style={{
+          flex: 1,
+          display: "grid",
+          gridTemplateColumns: `repeat(${GRID}, 1fr)`,
+          gridTemplateRows: `repeat(${GRID}, 1fr)`,
+          gap: 4,
+          background: "#0D2B55",
+          borderRadius: 12,
+          padding: 8,
+        }}
+      >
         {Array.from({ length: CELLS }, (_, i) => (
           <button
             key={i}
@@ -300,7 +352,8 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
       </div>
 
       <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
-        V každém bloku se zobrazí 10 sekvencí. Správná reprodukce → delší sekvence, chyba → kratší sekvence.
+        V každém bloku se zobrazí 10 sekvencí. Správná reprodukce → delší
+        sekvence, chyba → kratší sekvence.
       </div>
     </div>
   );
