@@ -88,6 +88,19 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
     [presentSeq]
   );
 
+  const reset = useCallback(() => {
+    setRunning(false);
+    setPhase("idle");
+    setBlockIdx(0);
+    setTrialIdx(0);
+    setSeqLen(START_LEN);
+    setReplayPos(0);
+    setSeq([]);
+    setLitIdx(null);
+    startTsRef.current = null;
+    logsRef.current = [];
+  })
+
   // vyhodnocení trialu
   const finishTrial = useCallback(
     (ok) => {
@@ -102,8 +115,6 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
         // blok hotov
         if (blockIdx + 1 >= MODES.length) {
           // konec celé hry
-          setRunning(false);
-          setPhase("idle");
           emitScore?.({
             taskId,
             sessionId,
@@ -118,6 +129,7 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
               logs: logsRef.current,
             },
           });
+          reset();
         } else {
           // přejdi na další blok
           setBlockIdx(blockIdx + 1);
@@ -179,6 +191,7 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
 
   const stop = () => {
     clearTimers();
+    reset();
     setRunning(false);
     setPhase("idle");
     emitEvent?.({ type: "STOP", ts: Date.now() });
@@ -240,8 +253,9 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
             Stop
           </button>
         )}
-        <div>Trial {trialIdx + 1}/{SEQS_PER_BLOCK}</div>
-        <div>Length {seqLen}</div>
+        <div>Blok {blockIdx + 1}/{MODES.length}</div>
+        <div>Pokus {trialIdx + 1}/{SEQS_PER_BLOCK}</div>
+        <div>Délka {seqLen}</div>
       </div>
 
       <div style={{
