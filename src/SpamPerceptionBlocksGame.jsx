@@ -12,7 +12,7 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
   const CELLS = GRID * GRID;
 
   const MODES = ["digits", "letters", "colors", "shapes"];
-  const SEQS_PER_BLOCK = 5;
+  const SEQS_PER_BLOCK = 10;
   const START_LEN = 3;
   const MIN_LEN = 2;
   const MAX_LEN = 7;
@@ -191,10 +191,22 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
 
   const stop = () => {
     clearTimers();
-    reset();
-    setRunning(false);
-    setPhase("idle");
     emitEvent?.({ type: "STOP", ts: Date.now() });
+    emitScore?.({
+      taskId,
+      sessionId,
+      durationMs: startTsRef.current ? Date.now() - startTsRef.current : 0,
+      metrics: {
+        spanMax_digits: spanMaxRef.current.digits,
+        spanMax_letters: spanMaxRef.current.letters,
+        spanMax_colors: spanMaxRef.current.colors,
+        spanMax_shapes: spanMaxRef.current.shapes,
+      },
+      details: {
+        logs: logsRef.current,
+      },
+    });
+    reset();
   };
 
   useEffect(() => {
@@ -210,7 +222,12 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+      <div   style={{
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        height: "50px",
+      }}>
         {!running ? (
           <button onClick={start}  className="btn btn-primary"
                   style={{
@@ -273,7 +290,7 @@ export default function SpamperceptionBlocks({ sessionId, taskId = "spampercepti
             key={i}
             onClick={() => onCellClick(i)}
             style={{
-              border: "1px solid #333",
+              border: "2px solid #333",
               background: litIdx === i ? "#F87171" : "#fff",
               borderRadius: 6,
               cursor: phase === "respond" ? "pointer" : "default",

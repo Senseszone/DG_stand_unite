@@ -292,7 +292,7 @@ export default function GridOrientationGame({
             onClick={(ev) => handleClick(idx, ev)}
             style={{
               background: isOn ? "#4ADE80" : "#fff",
-              border: "2px solid #D50032",
+              border: "2px solid #333",
               borderRadius: 8,
               cursor: running ? "pointer" : "default",
             }}

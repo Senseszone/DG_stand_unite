@@ -21,7 +21,7 @@ export default function ColorReactionGame({
                                             emitEvent,
                                             emitScore,
                                           }) {
-  const GRID_SIZE = 5;
+  const GRID_SIZE = 10;
   const MAX_ACTIVE = 1;
   const TOTAL_STIMULI = 50;
 
@@ -110,7 +110,6 @@ export default function ColorReactionGame({
         }
         // pokud skončily všechny a už jsme ukázali 50, ukonči
         if (totalShownRef.current >= TOTAL_STIMULI && next.length === 0) {
-          console.log("stop");
           stop();
         }
         return next;
@@ -488,7 +487,7 @@ export default function ColorReactionGame({
             ? show.color === "green"
               ? "2px solid #065F46"
               : "2px solid #7F1D1D"
-            : "2px solid #D50032";
+            : "2px solid #333";
 
           return (
             <button
