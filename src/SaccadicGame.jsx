@@ -12,7 +12,12 @@ import React, { useCallback, useRef, useState } from "react";
 
 const SEQUENCE = "51201945278910736431025892173883412675".split("").map(Number);
 
-export default function SaccadicSumGame({ sessionId = "demo-session", taskId = "saccadic-sum-v1", emitEvent, emitScore }) {
+export default function SaccadicSumGame({
+                                          sessionId = "demo-session",
+                                          taskId = "saccadic-sum-v1",
+                                          emitEvent,
+                                          emitScore,
+                                        }) {
   const TOTAL = SEQUENCE.length - 1; // 19 příkladů
   const [running, setRunning] = useState(false);
   const [step, setStep] = useState(0); // kolikátý příklad
@@ -48,15 +53,23 @@ export default function SaccadicSumGame({ sessionId = "demo-session", taskId = "
     const durationMs = startTs.current ? end - startTs.current : 0;
 
     const avg = rtList.current.length
-      ? Math.round(rtList.current.reduce((a, b) => a + b, 0) / rtList.current.length)
+      ? Math.round(
+        rtList.current.reduce((a, b) => a + b, 0) / rtList.current.length
+      )
       : 0;
     const best = rtList.current.length ? Math.min(...rtList.current) : 0;
-    const accuracy = TOTAL > 0 ? Math.round(((TOTAL - errors) / TOTAL) * 100) : 0;
+    const accuracy =
+      TOTAL > 0 ? Math.round(((TOTAL - errors) / TOTAL) * 100) : 0;
 
     emitEvent?.({
       type: "END",
       ts: end,
-      data: { errors, avgReactionMs: avg, bestReactionMs: best, accuracyPct: accuracy },
+      data: {
+        errors,
+        avgReactionMs: avg,
+        bestReactionMs: best,
+        accuracyPct: accuracy,
+      },
     });
 
     emitScore?.({
@@ -112,72 +125,97 @@ export default function SaccadicSumGame({ sessionId = "demo-session", taskId = "
   };
 
   return (
-    <div  style={{
-      width: "100vw",
-      height: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      background: "#1A4E8A",
-      color: "#fff",
-      padding: 16,
-      gap: 12,
-    }}>
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: "#1A4E8A",
+        color: "#fff",
+        padding: 16,
+        gap: 12,
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600 }}>Saccadic Sum</div>
-        <div style={{ fontSize: 12, opacity: 0.85,display: "none" }}>
+        <div style={{ fontSize: 20, fontWeight: 600 }}>Sakadický součet</div>
+        <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId} · task: {taskId}
         </div>
       </div>
 
-      <div style={{
-        display: "flex",
-        gap: 12,
-        alignItems: "center",
-        height: "50px",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          height: "50px",
+        }}
+      >
         {!running ? (
-          <button onClick={start}  className="btn btn-primary"
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 16,
-                    background: "#fff",
-                    color: "#000",
-                    border: "4px solid #000",
-                    position: "fixed",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: "200px",
-                    height: "100px",
-                    zIndex: 100,
-                    opacity: 0.9,
-                    fontSize: 24,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    userSelect: "none",
-                  }}>Start</button>
+          <button
+            onClick={start}
+            className="btn btn-primary"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 16,
+              background: "#fff",
+              color: "#000",
+              border: "4px solid #000",
+              position: "fixed",
+              top: "40%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "200px",
+              height: "100px",
+              zIndex: 100,
+              opacity: 0.9,
+              fontSize: 24,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            Start
+          </button>
         ) : (
-          <button className="btn "
-                  onClick={stop}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 16,
-                    background: "#fff",
-                    color: "#000",
-                    border: "4px solid #000",
-                    cursor: "pointer",
-                    userSelect: "none",
-                    fontWeight: 600,
-                  }}>Stop</button>
+          <button
+            className="btn "
+            onClick={stop}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 16,
+              background: "#fff",
+              color: "#000",
+              border: "4px solid #000",
+              cursor: "pointer",
+              userSelect: "none",
+              fontWeight: 600,
+            }}
+          >
+            Stop
+          </button>
         )}
-        {running && <div>Příklad {step + 1}/{TOTAL}</div>}
+        {running && (
+          <div>
+            Příklad {step + 1}/{TOTAL}
+          </div>
+        )}
         <div>Chyby: {errors}</div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 40,
+        }}
+      >
         <button
           onClick={() => onClick("green")}
           disabled={!running}
@@ -213,7 +251,9 @@ export default function SaccadicSumGame({ sessionId = "demo-session", taskId = "
       </div>
 
       <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
-        Úkol: Přečti dvojici čísel na SensesBoardu, sečti je a rozhodni. Pokud je výsledek jednociferný (0–9) → zelené tlačítko. Pokud dvouciferný (10+) → červené tlačítko. Celkem {TOTAL} příkladů.
+        Úkol: Přečti dvojici čísel na SensesBoardu, sečti je a rozhodni. Pokud
+        je výsledek jednociferný (0–9) → zelené tlačítko. Pokud dvouciferný
+        (10+) → červené tlačítko. Celkem {TOTAL} příkladů.
       </div>
     </div>
   );
