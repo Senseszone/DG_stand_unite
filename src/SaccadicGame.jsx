@@ -1,192 +1,219 @@
-// src/components/SaccadicGame.jsx
-import React, { useCallback, useEffect, useRef, useState } from "react";
+// src/components/SaccadicSumGame.jsx
+import React, { useCallback, useRef, useState } from "react";
 
-export default function SaccadicGame({ sessionId, taskId, emitEvent, emitScore }) {
+/**
+ * SaccadicSumGame
+ * - Klient čte sekvenci čísel na SensesBoardu
+ * - Vždy vezme dvě po sobě jdoucí, sečte je
+ * - Pokud součet < 10 → klikne zelené
+ * - Pokud součet >= 10 → klikne červené
+ * - 19 příkladů = 19 kliknutí, pak hra končí
+ */
+
+const SEQUENCE = "51201945278910736431025892173883412675".split("").map(Number);
+
+export default function SaccadicSumGame({ sessionId = "demo-session", taskId = "saccadic-sum-v1", emitEvent, emitScore }) {
+  const TOTAL = SEQUENCE.length - 1; // 19 příkladů
   const [running, setRunning] = useState(false);
-  const [stimulus, setStimulus] = useState(null); // číslo 0–9
-  const [grid, setGrid] = useState([]); // 10x10
+  const [step, setStep] = useState(0); // kolikátý příklad
   const [errors, setErrors] = useState(0);
-  const [hits, setHits] = useState(0);
 
   const startTs = useRef(null);
-  const lastStimulusTime = useRef(null);
-  const reactionList = useRef([]);
+  const lastClickTs = useRef(null);
+  const rtList = useRef([]);
+  const answers = useRef([]); // log
 
-  // vytvoření prázdné mřížky 10x10
-  const initGrid = useCallback(() => {
-    const cells = Array.from({ length: 100 }, () => null);
-    setGrid(cells);
+  // správná odpověď pro aktuální příklad
+  const correctAnswer = useCallback((i) => {
+    const a = SEQUENCE[i];
+    const b = SEQUENCE[i + 1];
+    const sum = a + b;
+    return sum < 10 ? "green" : "red";
   }, []);
 
-  // nový podnět
-  const spawnStimulus = useCallback(() => {
-    const cells = Array.from({ length: 100 }, () => null);
-    const idx = Math.floor(Math.random() * 100);
-    const num = Math.floor(Math.random() * 10);
-    cells[idx] = num;
-    setGrid(cells);
-    setStimulus(num);
-    lastStimulusTime.current = performance.now();
-  }, []);
-
-  const reset = useCallback(() => {
-    initGrid();
-    setStimulus(null);
-    setErrors(0);
-    setHits(0);
-    reactionList.current = [];
-  }, [initGrid]);
-
-  const start = useCallback(() => {
-    reset();
+  const start = () => {
     setRunning(true);
-    const now = Date.now();
-    startTs.current = now;
-    emitEvent({
-      type: "START",
-      ts: now,
-      data: { sessionId, taskId },
-    });
-    spawnStimulus();
-  }, [reset, spawnStimulus, emitEvent, sessionId, taskId]);
+    setStep(0);
+    setErrors(0);
+    rtList.current = [];
+    answers.current = [];
+    startTs.current = Date.now();
+    lastClickTs.current = Date.now();
+    emitEvent?.({ type: "START", ts: Date.now(), data: { sessionId, taskId } });
+  };
 
-  const stop = useCallback(() => {
+  const stop = () => {
     setRunning(false);
     const end = Date.now();
     const durationMs = startTs.current ? end - startTs.current : 0;
 
-    const avg = reactionList.current.length
-      ? Math.round(reactionList.current.reduce((a, b) => a + b, 0) / reactionList.current.length)
+    const avg = rtList.current.length
+      ? Math.round(rtList.current.reduce((a, b) => a + b, 0) / rtList.current.length)
       : 0;
-    const best = reactionList.current.length ? Math.min(...reactionList.current) : 0;
+    const best = rtList.current.length ? Math.min(...rtList.current) : 0;
+    const accuracy = TOTAL > 0 ? Math.round(((TOTAL - errors) / TOTAL) * 100) : 0;
 
-    emitEvent({
+    emitEvent?.({
       type: "END",
       ts: end,
-      data: {
-        errors,
-        hits,
-        avgReactionMs: avg,
-        bestReactionMs: best,
-        accuracyPct: hits + errors > 0 ? Math.round((hits / (hits + errors)) * 100) : 100,
-      },
+      data: { errors, avgReactionMs: avg, bestReactionMs: best, accuracyPct: accuracy },
     });
 
-    emitScore({
+    emitScore?.({
       taskId,
+      sessionId,
       durationMs,
       metrics: {
         completionTimeSec: Math.round((durationMs / 1000) * 100) / 100,
+        errors,
         reactionTimeAvgMs: avg,
         reactionTimeBestMs: best,
-        decisionErrors: errors,
-        hits,
-        accuracyPct: hits + errors > 0 ? Math.round((hits / (hits + errors)) * 100) : 100,
+        accuracyPct: accuracy,
       },
       details: {
-        reactionTimeListMs: reactionList.current,
+        reactionTimeListMs: rtList.current,
+        answers: answers.current,
       },
     });
-  }, [errors, hits, emitEvent, emitScore, taskId]);
+  };
 
-  const handleClick = useCallback(
-    (num, idx) => {
-      if (!running) return;
+  const onClick = (color) => {
+    if (!running) return;
+    const now = Date.now();
+    const rt = lastClickTs.current ? now - lastClickTs.current : 0;
+    lastClickTs.current = now;
 
-      const now = performance.now();
-      const rt = lastStimulusTime.current ? Math.round(now - lastStimulusTime.current) : 0;
+    const correct = correctAnswer(step);
+    const isCorrect = color === correct;
+    if (!isCorrect) setErrors((e) => e + 1);
 
-      if (num === stimulus) {
-        reactionList.current.push(rt);
-        setHits((h) => h + 1);
-        emitEvent({
-          type: "HIT",
-          ts: Date.now(),
-          data: { num, idx, reactionMs: rt },
-        });
-      } else {
-        setErrors((e) => e + 1);
-        emitEvent({
-          type: "MISS",
-          ts: Date.now(),
-          data: { expected: stimulus, clicked: num, idx },
-        });
-      }
+    rtList.current.push(rt);
+    answers.current.push({
+      idx: step,
+      a: SEQUENCE[step],
+      b: SEQUENCE[step + 1],
+      expected: correct,
+      clicked: color,
+      correct: isCorrect,
+      rt,
+    });
 
-      spawnStimulus();
-    },
-    [running, stimulus, spawnStimulus, emitEvent]
-  );
+    emitEvent?.({
+      type: isCorrect ? "HIT" : "MISS",
+      ts: now,
+      data: { a: SEQUENCE[step], b: SEQUENCE[step + 1], clicked: color, rt },
+    });
 
-  useEffect(() => {
-    initGrid();
-  }, [initGrid]);
+    if (step + 1 >= TOTAL) {
+      stop();
+    } else {
+      setStep(step + 1);
+    }
+  };
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        background: "#1A4E8A",
-        color: "#fff",
-        padding: 16,
-        gap: 12,
-      }}
-    >
+    <div  style={{
+      width: "100vw",
+      height: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      background: "#1A4E8A",
+      color: "#fff",
+      padding: 16,
+      gap: 12,
+    }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600 }}>Task 2 – Sakadické pohyby</div>
-        <div style={{ fontSize: 12, opacity: 0.85 }}>session: {sessionId || "–"} · task: {taskId}</div>
+        <div style={{ fontSize: 20, fontWeight: 600 }}>Saccadic Sum</div>
+        <div style={{ fontSize: 12, opacity: 0.85,display: "none" }}>
+          session: {sessionId} · task: {taskId}
+        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        height: "50px",
+      }}>
         {!running ? (
-          <button onClick={start} style={{ padding: "8px 16px", borderRadius: 8 }}>
-            Start
-          </button>
+          <button onClick={start}  className="btn btn-primary"
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 16,
+                    background: "#fff",
+                    color: "#000",
+                    border: "4px solid #000",
+                    position: "fixed",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: "200px",
+                    height: "100px",
+                    zIndex: 100,
+                    opacity: 0.9,
+                    fontSize: 24,
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}>Start</button>
         ) : (
-          <button onClick={stop} style={{ padding: "8px 16px", borderRadius: 8 }}>
-            Stop
-          </button>
+          <button className="btn "
+                  onClick={stop}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 16,
+                    background: "#fff",
+                    color: "#000",
+                    border: "4px solid #000",
+                    cursor: "pointer",
+                    userSelect: "none",
+                    fontWeight: 600,
+                  }}>Stop</button>
         )}
-        <div>Hits: {hits}</div>
-        <div>Errors: {errors}</div>
+        {running && <div>Příklad {step + 1}/{TOTAL}</div>}
+        <div>Chyby: {errors}</div>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          display: "grid",
-          gridTemplateColumns: "repeat(10, 1fr)",
-          gridTemplateRows: "repeat(10, 1fr)",
-          gap: 4,
-          background: "#0D2B55",
-          borderRadius: 12,
-          padding: 8,
-        }}
-      >
-        {grid.map((num, idx) => (
-          <button
-            key={idx}
-            disabled={num === null || !running}
-            onClick={() => handleClick(num, idx)}
-            style={{
-              background: num !== null ? "#fff" : "transparent",
-              border: num !== null ? "2px solid #D50032" : "none",
-              borderRadius: 6,
-              fontSize: 20,
-              fontWeight: 700,
-              cursor: num !== null && running ? "pointer" : "default",
-            }}
-          >
-            {num !== null ? num : ""}
-          </button>
-        ))}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
+        <button
+          onClick={() => onClick("green")}
+          disabled={!running}
+          style={{
+            width: 200,
+            height: 200,
+            borderRadius: 16,
+            background: "#4ADE80", // zelené tlačítko
+            border: "none",
+            fontSize: 24,
+            fontWeight: 700,
+            cursor: running ? "pointer" : "default",
+          }}
+        >
+          Jednociferné
+        </button>
+        <button
+          onClick={() => onClick("red")}
+          disabled={!running}
+          style={{
+            width: 200,
+            height: 200,
+            borderRadius: 16,
+            background: "#EF4444", // červené tlačítko
+            border: "none",
+            fontSize: 24,
+            fontWeight: 700,
+            cursor: running ? "pointer" : "default",
+          }}
+        >
+          Dvouciferné
+        </button>
       </div>
 
-      <div style={{ fontSize: 12, opacity: 0.85 }}>
-        Klikněte na číslo na obrazovce, pokud se shoduje s číslem, které právě čtete na SensesBoardu.
+      <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
+        Úkol: Přečti dvojici čísel na SensesBoardu, sečti je a rozhodni. Pokud je výsledek jednociferný (0–9) → zelené tlačítko. Pokud dvouciferný (10+) → červené tlačítko. Celkem {TOTAL} příkladů.
       </div>
     </div>
   );
