@@ -20,7 +20,11 @@ export default function ColorReactionGame({
                                             taskId,
                                             emitEvent,
                                             emitScore,
+                                            config,
                                           }) {
+  const name = String(config?.name ?? "");
+  const description = String(config?.description ?? "");
+
   const GRID_SIZE = 10;
   const MAX_ACTIVE = 1;
   const TOTAL_STIMULI = 50;
@@ -390,15 +394,23 @@ export default function ColorReactionGame({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600 }}>
-          Reakční barevná pole
-        </div>
+        <div style={{ fontSize: 20, fontWeight: 600, zIndex: 100 }}>{name}</div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId} · limit:{" "}
           {reactionWindowMsRef.current} ms · shown: {totalShownRef.current}/
           {TOTAL_STIMULI}
         </div>
       </div>
+
+      {!running ? <div className={"game-overlay"}></div> : ""}
+      {description && !running ? (
+        <div
+          className={"description-wrapper"}
+          dangerouslySetInnerHTML={{ __html: description }}
+        />
+      ) : (
+        ""
+      )}
 
       <div
         style={{

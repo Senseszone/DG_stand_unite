@@ -12,7 +12,10 @@ export default function SpamperceptionBlocks({
                                                taskId = "spamperception-blocks-v1",
                                                emitEvent,
                                                emitScore,
+                                               config,
                                              }) {
+  const name = String(config?.name ?? "");
+  const description = String(config?.description ?? "");
   const GRID = 10;
   const CELLS = GRID * GRID;
 
@@ -252,14 +255,22 @@ export default function SpamperceptionBlocks({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600 }}>
-          Spam perception blocks
-        </div>
+        <div style={{ fontSize: 20, fontWeight: 600, zIndex: 100 }}>{name}</div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · block: {blockIdx + 1}/{MODES.length} (
           {MODES[blockIdx]})
         </div>
       </div>
+
+      {!running ? <div className={"game-overlay"}></div> : ""}
+      {description && !running ? (
+        <div
+          className={"description-wrapper"}
+          dangerouslySetInnerHTML={{ __html: description }}
+        />
+      ) : (
+        ""
+      )}
 
       <div
         style={{

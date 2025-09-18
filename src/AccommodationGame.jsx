@@ -77,6 +77,9 @@ export default function AccommodationGame(props) {
   const taskId = props.taskId || "accommodation";
   const { sessionId, config, emitEvent, emitScore } = useISensesBridge(props);
 
+  const name = String(config?.name ?? "");
+  const description = String(config?.description ?? "");
+
   const spacing = Number(config?.spacingPx ?? 24);
   const size = Number(config?.squareSizePx ?? 96);
   const layout = config?.layout === "grid" ? "grid" : "row";
@@ -232,6 +235,12 @@ export default function AccommodationGame(props) {
     [running, currentLetter, done, targetIndex, finish, emitEvent]
   );
 
+  const htmlDecode = useCallback((input) => {
+    var e = document.createElement("div");
+    e.innerHTML = input;
+    return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
+  });
+
   const styles = useMemo(
     () => ({
       bgBlue: "#1A4E8A",
@@ -312,12 +321,20 @@ export default function AccommodationGame(props) {
           color: "#fff",
         }}
       >
-        <div style={{ fontSize: 20, fontWeight: 600 }}>Přeostření</div>
+        <div style={{ fontSize: 20, fontWeight: 600, zIndex: 100 }}>{name}</div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId}
         </div>
       </div>
-
+      {!running ? <div className={"game-overlay"}></div> : ""}
+      {description && !running ? (
+        <div
+          className={"description-wrapper"}
+          dangerouslySetInnerHTML={{ __html: description }}
+        />
+      ) : (
+        ""
+      )}
       <div
         style={{
           display: "flex",
@@ -374,6 +391,7 @@ export default function AccommodationGame(props) {
             Stop
           </button>
         )}
+
         <div>
           cílové: <b>{currentLetter ?? "–"}</b>
         </div>

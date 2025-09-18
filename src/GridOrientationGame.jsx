@@ -6,7 +6,10 @@ export default function GridOrientationGame({
                                               taskId,
                                               emitEvent,
                                               emitScore,
+                                              config,
                                             }) {
+  const name = String(config?.name ?? "");
+  const description = String(config?.description ?? "");
   const [running, setRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [grid, setGrid] = useState([]); // stav čtverců (rozsvíceno/není)
@@ -205,14 +208,20 @@ export default function GridOrientationGame({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600 }}>
-          Vizuo-motorická orientace
-        </div>
+        <div style={{ fontSize: 20, fontWeight: 600, zIndex: 100 }}>{name}</div>
         <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
           session: {sessionId || "–"} · task: {taskId}
         </div>
       </div>
-
+      {!running ? <div className={"game-overlay"}></div> : ""}
+      {description && !running ? (
+        <div
+          className={"description-wrapper"}
+          dangerouslySetInnerHTML={{ __html: description }}
+        />
+      ) : (
+        ""
+      )}
       <div
         style={{
           display: "flex",
