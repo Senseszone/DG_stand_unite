@@ -10,6 +10,8 @@ export default function GridOrientationGame({
                                             }) {
   const name = String(config?.name ?? "");
   const description = String(config?.description ?? "");
+
+  const gridSize = String(config?.gridSize ?? 100);
   const [running, setRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [grid, setGrid] = useState([]); // stav čtverců (rozsvíceno/není)
@@ -21,9 +23,10 @@ export default function GridOrientationGame({
   const reactionList = useRef([]);
   const sequenceLog = useRef([]);
 
+
   // inicializace mřížky 10x10
   const initGrid = useCallback(() => {
-    const cells = Array.from({ length: 100 }, () => false); // false = zhasnutý
+    const cells = Array.from({ length: gridSize }, () => false); // false = zhasnutý
     setGrid(cells);
   }, []);
 
@@ -160,13 +163,17 @@ export default function GridOrientationGame({
         reactionMs: rt,
       });
 
-      if (rt > 0) reactionList.current.push(rt);
-
-      emitEvent?.({
-        type: "HIT",
-        ts: Date.now(),
-        data: { idx, row: Math.floor(idx / 10), col: idx % 10, reactionMs: rt },
-      });
+      if (rt > 0) reactionList.current.push(rt)
+      {
+        emitEvent?.({
+          type: "HIT",
+          ts  : Date.now(),
+          data: { idx, row: Math.floor(idx / 10), col: idx % 10, reactionMs: rt },
+        });
+        if(grid.filter((g) => g).length + 1 >= gridSize) {
+          stop();
+        }
+      }
     },
     [running, grid, emitEvent]
   );
