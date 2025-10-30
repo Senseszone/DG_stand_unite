@@ -11,7 +11,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
  * - Adaptivní reakční limit (počáteční 800 ms)
  * - Loguje zásahy, chyby, missy, reakční časy a vzdálenosti
  */
-export default function ColorReactionGameEdges({ 
+export default function ColorReactionEdgesGame({
   sessionId, 
   taskId, 
   emitEvent, 
