@@ -7,6 +7,8 @@ import SaccadicGame from './SaccadicGame.jsx';
 import SpamperceptionBlocks from './SpamPerceptionBlocksGame.jsx';
 import FiveTargetReactionGame from './FiveTargetReactionGame.jsx';
 import ColorReactionWaitGame from './ColorReactionWaitGame.jsx';
+import ColorReactionGameEdges from './ColorReactionGameEdges.jsx';
+import SaccadicLineReactionGame from './SaccadicLineReactionGame.jsx';
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -17,10 +19,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     {/*  config={{ squareSizePx: 96, layout: "row" }}*/}
     {/*/>*/}
 
-    <SaccadicGame
+    <SaccadicLineReactionGame
         sessionId="demo-session"
         emitEvent={(e) => console.log("EVENT", e)}
         emitScore={(s) => console.log("SCORE", s)}
-    ></SaccadicGame>
+    ></SaccadicLineReactionGame>
   </React.StrictMode>
 );
