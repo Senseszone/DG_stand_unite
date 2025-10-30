@@ -1,5 +1,5 @@
 // src/components/SaccadicSumGame.jsx
-import React, { useCallback, useRef, useState } from "react";
+import React, {useCallback, useMemo, useRef, useState} from "react";
 
 /**
  * SaccadicSumGame
@@ -126,6 +126,20 @@ export default function SaccadicSumGame({
       setStep(step + 1);
     }
   };
+  const styles = useMemo(
+    () => ({
+      blue: "#1A4E8A",
+      red: "#D50032",
+      green: "#00A499",
+      yellow: "#F2A900",
+      orange: "#F2A900",
+      gray: "#1D1D1D",
+      white: "#FFFFFF",
+      black: "#1D1D1D",
+      redLight: "#F87171",
+    }),
+    []
+  );
 
   return (
     <div
@@ -134,7 +148,7 @@ export default function SaccadicSumGame({
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "#1A4E8A",
+        background: styles.blue,
         color: "#fff",
         padding: 16,
         gap: 12,
@@ -233,8 +247,9 @@ export default function SaccadicSumGame({
           style={{
             width: 200,
             height: 200,
+            color: "#fff",
             borderRadius: 16,
-            background: "#4ADE80", // zelené tlačítko
+            background: styles.green, // zelené tlačítko
             border: "none",
             fontSize: 24,
             fontWeight: 700,
@@ -248,9 +263,10 @@ export default function SaccadicSumGame({
           disabled={!running}
           style={{
             width: 200,
+            color: "#fff",
             height: 200,
             borderRadius: 16,
-            background: "#EF4444", // červené tlačítko
+            background: styles.red, // červené tlačítko
             border: "none",
             fontSize: 24,
             fontWeight: 700,
