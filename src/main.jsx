@@ -6,6 +6,7 @@ import GridOrientationGame from './GridOrientationGame.jsx';
 import SaccadicGame from './SaccadicGame.jsx';
 import SpamperceptionBlocks from './SpamPerceptionBlocksGame.jsx';
 import FiveTargetReactionGame from './FiveTargetReactionGame.jsx';
+import ColorReactionWaitGame from './ColorReactionWaitGame.jsx';
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
