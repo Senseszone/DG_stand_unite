@@ -19,10 +19,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     {/*  config={{ squareSizePx: 96, layout: "row" }}*/}
     {/*/>*/}
 
-    <SaccadicLineReactionGame
+    <ColorReactionGameEdges
         sessionId="demo-session"
         emitEvent={(e) => console.log("EVENT", e)}
         emitScore={(s) => console.log("SCORE", s)}
-    ></SaccadicLineReactionGame>
+    ></ColorReactionGameEdges>
   </React.StrictMode>
 );

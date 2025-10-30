@@ -140,7 +140,14 @@ export default function ColorReactionGameEdges({
       if (!runningState.current) return;
       setStimuli((prev) => {
         if (prev.length >= MAX_ACTIVE) return prev;
-        if (totalShownRef.current >= TOTAL_STIMULI) return prev;
+        // OPRAVA: kontroluj PŘED inkrementací
+        if (totalShownRef.current >= TOTAL_STIMULI) {
+          // pokud už není co zobrazovat a není žádný aktivní stimulus, ukonči hru
+          if (prev.length === 0) {
+            setTimeout(() => stop(), 0);
+          }
+          return prev;
+        }
 
         const color = Math.random() < 0.6 ? "green" : "red";
         const idx = pickEdgeIndex();
@@ -159,13 +166,22 @@ export default function ColorReactionGameEdges({
               emitEvent?.({ type: "MISS", ts: nowMs(), data: { idx: stim.idx, color: "green" } });
             }
             const next = prevStim.filter((s) => s.id !== id);
-            if (runningState.current && totalShownRef.current < TOTAL_STIMULI) queueSpawn();
-            if (totalShownRef.current >= TOTAL_STIMULI && next.length === 0) stop();
+            
+            // pokračuj pouze pokud ještě nejsme na limitu
+            if (runningState.current && totalShownRef.current < TOTAL_STIMULI) {
+              queueSpawn();
+            } else if (totalShownRef.current >= TOTAL_STIMULI && next.length === 0) {
+              // pokud už je limit dosažen a není žádný aktivní stimulus, ukonči hru
+              setTimeout(() => stop(), 0);
+            }
+            
             return next;
           });
         }, displayDur);
 
         const newStim = { id, idx, color, shownAt, expiresAt, timeoutId };
+        
+        // OPRAVA: inkrementuj AŽ POTOM, co sis ověřil, že se vejdeš do limitu
         totalShownRef.current += 1;
 
         emitEvent?.({ type: "STIMULUS", ts: shownAt, data: { id, idx, color, displayMs: displayDur } });
@@ -262,8 +278,13 @@ export default function ColorReactionGameEdges({
         clearTimeout(stim.timeoutId);
         const next = currentStimuli.filter((s) => s.id !== stim.id);
         
-        if (runningState.current && totalShownRef.current < TOTAL_STIMULI) queueSpawn();
-        if (totalShownRef.current >= TOTAL_STIMULI && next.length === 0) stop();
+        // pokračuj pouze pokud ještě nejsme na limitu
+        if (runningState.current && totalShownRef.current < TOTAL_STIMULI) {
+          queueSpawn();
+        } else if (totalShownRef.current >= TOTAL_STIMULI && next.length === 0) {
+          // pokud už je limit dosažen a není žádný aktivní stimulus, ukonči hru
+          setTimeout(() => stop(), 0);
+        }
         
         return next;
       });
