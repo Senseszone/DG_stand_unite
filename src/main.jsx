@@ -17,10 +17,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     {/*  config={{ squareSizePx: 96, layout: "row" }}*/}
     {/*/>*/}
 
-    <GridOrientationGame
+    <SpamperceptionBlocks
         sessionId="demo-session"
         emitEvent={(e) => console.log("EVENT", e)}
         emitScore={(s) => console.log("SCORE", s)}
-    ></GridOrientationGame>
+    ></SpamperceptionBlocks>
   </React.StrictMode>
 );

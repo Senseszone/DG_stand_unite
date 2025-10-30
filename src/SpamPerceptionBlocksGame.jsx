@@ -1,5 +1,5 @@
 // src/components/SpamperceptionBlocks.jsx
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 
 /**
  * Spamperception Blocks – diagnostická verze
@@ -40,6 +40,8 @@ export default function SpamperceptionBlocks({
   const logsRef = useRef([]);
   const spanMaxRef = useRef({ digits: 0, letters: 0, colors: 0, shapes: 0 });
   const startTsRef = useRef(null);
+  const stageRef = useRef(null);
+  const [gridSizePx] = useState({ gap: 4 });
 
   // pomocné funkce
   const clearTimers = () => {
@@ -241,6 +243,21 @@ export default function SpamperceptionBlocks({
     return () => clearTimers();
   }, []);
 
+  const styles = useMemo(
+    () => ({
+      blue: "#1A4E8A",
+      red: "#D50032",
+      green: "#00A499",
+      yellow: "#F2A900",
+      orange: "#F2A900",
+      gray: "#1D1D1D",
+      white: "#FFFFFF",
+      black: "#1D1D1D",
+      redLight: "#F87171",
+    }),
+    []
+  );
+
   return (
     <div
       style={{
@@ -256,9 +273,9 @@ export default function SpamperceptionBlocks({
     >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ fontSize: 20, fontWeight: 600, zIndex: 100 }}>{name}</div>
-        <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
-          session: {sessionId || "–"} · block: {blockIdx + 1}/{MODES.length} (
-          {MODES[blockIdx]})
+        <div className={"game-stats"}>
+          <span className={"me-2"}>Blok: {blockIdx + 1}/{MODES.length} (
+            {MODES[blockIdx]})</span>
         </div>
       </div>
 
@@ -327,45 +344,50 @@ export default function SpamperceptionBlocks({
             Stop
           </button>
         )}
-        <div>
-          Blok {blockIdx + 1}/{MODES.length}
-        </div>
-        <div>
-          Pokus {trialIdx + 1}/{SEQS_PER_BLOCK}
-        </div>
-        <div>Délka {seqLen}</div>
       </div>
 
+      {/* Čtvercová hrací plocha 10×10 */}
       <div
+        ref={stageRef}
         style={{
-          flex: 1,
+          margin: "auto",
+          width: "100vmin",
+          height: "100vmin",
           display: "grid",
           gridTemplateColumns: `repeat(${GRID}, 1fr)`,
           gridTemplateRows: `repeat(${GRID}, 1fr)`,
-          gap: 4,
+          gap: gridSizePx.gap,
           background: "#0D2B55",
-          borderRadius: 12,
+          borderRadius: 20,
           padding: 8,
         }}
       >
-        {Array.from({ length: CELLS }, (_, i) => (
-          <button
-            key={i}
-            onClick={() => onCellClick(i)}
-            style={{
-              border: "2px solid #333",
-              background: litIdx === i ? "#F87171" : "#fff",
-              borderRadius: 6,
-              cursor: phase === "respond" ? "pointer" : "default",
-            }}
-          />
-        ))}
+        {Array.from({ length: CELLS }, (_, i) => {
+          const isLit = litIdx === i;
+          const bg = isLit ? styles.orange : styles.white;
+          const border = isLit ? `2px solid ${styles.black}` : "2px solid #ccc";
+
+          return (
+            <button
+              key={i}
+              id={`cell-${i}`}
+              onClick={() => onCellClick(i)}
+              disabled={phase !== "respond"}
+              style={{
+                border,
+                background: bg,
+                borderRadius: 8,
+                cursor: phase === "respond" ? "pointer" : "default",
+                userSelect: "none",
+                fontSize: 24,
+                fontWeight: 700,
+                color: styles.white,
+              }}
+            />
+          );
+        })}
       </div>
 
-      <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
-        V každém bloku se zobrazí 10 sekvencí. Správná reprodukce → delší
-        sekvence, chyba → kratší sekvence.
-      </div>
     </div>
   );
 }
