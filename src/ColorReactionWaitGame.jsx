@@ -161,7 +161,7 @@ export default function ColorReactionWaitGame({ sessionId, taskId, emitEvent, em
       if (!runningState.current) return;
       spawnStimulus();
     }, jitter);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Když už je vše vyčerpáno, ale ještě probíhají drobné asynchronní operace
   const queueMicroStopOrNext = useCallback(() => {
