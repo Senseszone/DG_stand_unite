@@ -1,5 +1,5 @@
 // src/components/GridOrientationGame.jsx
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export default function GridOrientationGame({
                                               sessionId,
@@ -11,43 +11,62 @@ export default function GridOrientationGame({
   const name = String(config?.name ?? "");
   const description = String(config?.description ?? "");
 
-  const gridSize = String(config?.gridSize ?? 100);
+  const GRID_SIZE = 10;
+  const gridSize = Number(config?.gridSize ?? 100);
+  
+  const runningState = useRef(false);
   const [running, setRunning] = useState(false);
+
   const [timeLeft, setTimeLeft] = useState(60);
-  const [grid, setGrid] = useState([]); // stav čtverců (rozsvíceno/není)
-  const [errors, setErrors] = useState(0);
-  const [outsideTouches, setOutsideTouches] = useState(0);
+  const [grid, setGrid] = useState([]);
+  const [gridSizePx] = useState({ gap: 4 });
 
-  const startTs = useRef(null);
-  const lastClickTs = useRef(null);
-  const reactionList = useRef([]);
-  const sequenceLog = useRef([]);
+  const startTsRef = useRef(null);
+  const lastClickTsRef = useRef(null);
+  const stageRef = useRef(null);
+  const timerIntervalRef = useRef(null);
+  const autoStopTimeoutRef = useRef(null);
+  
+  const errorsRef = useRef(0);
+  const outsideTouchesRef = useRef(0);
+  const reactionListRef = useRef([]);
+  const sequenceLogRef = useRef([]);
 
-
-  // inicializace mřížky 10x10
+  // inicializace mřížky
   const initGrid = useCallback(() => {
-    const cells = Array.from({ length: gridSize }, () => false); // false = zhasnutý
+    const cells = Array.from({ length: gridSize }, () => false);
     setGrid(cells);
-  }, []);
+  }, [gridSize]);
 
   // reset hry
   const reset = useCallback(() => {
     initGrid();
-    setErrors(0);
-    setOutsideTouches(0);
-    reactionList.current = [];
-    sequenceLog.current = [];
-    startTs.current = null;
-    lastClickTs.current = null;
+    errorsRef.current = 0;
+    outsideTouchesRef.current = 0;
+    reactionListRef.current = [];
+    sequenceLogRef.current = [];
+    startTsRef.current = null;
+    lastClickTsRef.current = null;
+    setTimeLeft(60);
+    
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    if (autoStopTimeoutRef.current) {
+      clearTimeout(autoStopTimeoutRef.current);
+      autoStopTimeoutRef.current = null;
+    }
   }, [initGrid]);
 
   // spuštění hry
   const start = useCallback(() => {
     reset();
+    runningState.current = true;
     setRunning(true);
     const now = Date.now();
-    startTs.current = now;
-    lastClickTs.current = now;
+    startTsRef.current = now;
+    lastClickTsRef.current = now;
 
     emitEvent?.({
       type: "START",
@@ -55,142 +74,170 @@ export default function GridOrientationGame({
       data: { sessionId, taskId },
     });
 
-    let interval;
     let timeRemaining = 60;
-    const tick = () => {
+    timerIntervalRef.current = setInterval(() => {
       timeRemaining = timeRemaining - 1;
       setTimeLeft(timeRemaining);
       if (timeRemaining <= 0) {
-        clearInterval(interval);
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
-    };
-
-    interval = setInterval(tick, 1000);
+    }, 1000);
 
     // automatické zastavení po 60s
-    setTimeout(() => {
-      stop();
+    autoStopTimeoutRef.current = setTimeout(() => {
+      if (runningState.current) {
+        stop();
+      }
     }, 60000);
   }, [reset, emitEvent, sessionId, taskId]);
 
   // ukončení hry
   const stop = useCallback(() => {
+    runningState.current = false;
     setRunning(false);
-    const end = Date.now();
-    const durationMs = startTs.current ? end - startTs.current : 0;
+    
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    if (autoStopTimeoutRef.current) {
+      clearTimeout(autoStopTimeoutRef.current);
+      autoStopTimeoutRef.current = null;
+    }
 
-    const avg = reactionList.current.length
-      ? Math.round(
-        reactionList.current.reduce((a, b) => a + b, 0) /
-        reactionList.current.length
-      )
-      : 0;
-    const best = reactionList.current.length
-      ? Math.min(...reactionList.current)
-      : 0;
+    setGrid((currentGrid) => {
+      const end = Date.now();
+      const durationMs = startTsRef.current ? end - startTsRef.current : 0;
 
-    emitEvent?.({
-      type: "END",
-      ts: end,
-      data: {
-        touched: grid.filter((g) => g).length,
-        errors,
-        outsideTouches,
-        avgReactionMs: avg,
-        bestReactionMs: best,
-      },
+      const rtList = reactionListRef.current;
+      const avg = rtList.length
+        ? Math.round(rtList.reduce((a, b) => a + b, 0) / rtList.length)
+        : 0;
+      const best = rtList.length ? Math.min(...rtList) : 0;
+
+      const touched = currentGrid.filter((g) => g).length;
+      const errors = errorsRef.current;
+      const outsideTouches = outsideTouchesRef.current;
+
+      emitEvent?.({
+        type: "END",
+        ts: end,
+        data: {
+          touched,
+          errors,
+          outsideTouches,
+          avgReactionMs: avg,
+          bestReactionMs: best,
+        },
+      });
+
+      emitScore?.({
+        sessionId,
+        taskId,
+        durationMs,
+        metrics: {
+          completionTimeSec: Math.round((durationMs / 1000) * 100) / 100,
+          reactionTimeAvgMs: avg,
+          reactionTimeBestMs: best,
+          touches: touched,
+          errors,
+          outsideTouches,
+          accuracyPct:
+            touched + errors > 0
+              ? Math.round((touched / (touched + errors)) * 100)
+              : 100,
+        },
+        details: {
+          reactionTimeListMs: rtList,
+          sequenceLog: sequenceLogRef.current,
+        },
+      });
+      
+      return currentGrid;
     });
-
-    emitScore?.({
-      sessionId,
-      taskId,
-      durationMs,
-      metrics: {
-        completionTimeSec: Math.round((durationMs / 1000) * 100) / 100,
-        reactionTimeAvgMs: avg,
-        reactionTimeBestMs: best,
-        touches: grid.filter((g) => g).length,
-        errors,
-        outsideTouches,
-        accuracyPct:
-          grid.filter((g) => g).length + errors > 0
-            ? Math.round(
-              (grid.filter((g) => g).length /
-                (grid.filter((g) => g).length + errors)) *
-              100
-            )
-            : 100,
-      },
-      details: {
-        reactionTimeListMs: reactionList.current,
-        sequenceLog: sequenceLog.current,
-      },
-    });
-  }, [errors, outsideTouches, grid, emitEvent, emitScore, taskId]);
+  }, [emitEvent, emitScore, taskId, sessionId]);
 
   // klik na čtverec
   const handleClick = useCallback(
     (idx, ev) => {
-      if (!running) return;
+      if (!runningState.current) return;
 
-      const now = performance.now();
-      const rt = lastClickTs.current
-        ? Math.round(now - lastClickTs.current)
-        : 0;
-      lastClickTs.current = now;
+      setGrid((currentGrid) => {
+        // Kontrola zda už není rozsvícený
+        if (currentGrid[idx]) {
+          errorsRef.current += 1;
+          emitEvent?.({
+            type: "ERROR_REPEAT",
+            ts: Date.now(),
+            data: { idx },
+          });
+          return currentGrid;
+        }
 
-      if (grid[idx]) {
-        // už byl rozsvícený
-        setErrors((e) => e + 1);
-        emitEvent?.({
-          type: "ERROR_REPEAT",
+        const now = performance.now();
+        const rt = lastClickTsRef.current
+          ? Math.round(now - lastClickTsRef.current)
+          : 0;
+        lastClickTsRef.current = now;
+
+        const newGrid = [...currentGrid];
+        newGrid[idx] = true;
+
+        // logování pořadí
+        sequenceLogRef.current.push({
+          idx,
+          row: Math.floor(idx / 10),
+          col: idx % 10,
           ts: Date.now(),
-          data: { idx },
+          reactionMs: rt,
         });
-        return;
-      }
 
-      const newGrid = [...grid];
-      newGrid[idx] = true;
-      setGrid(newGrid);
+        if (rt > 0) {
+          reactionListRef.current.push(rt);
+        }
 
-      // logování pořadí
-      sequenceLog.current.push({
-        idx,
-        row: Math.floor(idx / 10),
-        col: idx % 10,
-        ts: Date.now(),
-        reactionMs: rt,
-      });
-
-      if (rt > 0) reactionList.current.push(rt)
-      {
         emitEvent?.({
           type: "HIT",
-          ts  : Date.now(),
-          data: { idx, row: Math.floor(idx / 10), col: idx % 10, reactionMs: rt },
+          ts: Date.now(),
+          data: { 
+            idx, 
+            row: Math.floor(idx / 10), 
+            col: idx % 10, 
+            reactionMs: rt 
+          },
         });
-        if(grid.filter((g) => g).length + 1 >= gridSize) {
-          stop();
+
+        // Kontrola dokončení
+        const touchedCount = newGrid.filter((g) => g).length;
+        if (touchedCount >= gridSize) {
+          // Použít setTimeout aby se state stihl aktualizovat
+          setTimeout(() => {
+            if (runningState.current) {
+              stop();
+            }
+          }, 0);
         }
-      }
+
+        return newGrid;
+      });
     },
-    [running, grid, emitEvent]
+    [emitEvent, gridSize, stop]
   );
 
   // klik mimo mřížku
   const handleOutsideClick = useCallback(
     (e) => {
-      if (!running) return;
+      if (!runningState.current) return;
       if (!e.target.closest(".grid-cell")) {
-        setOutsideTouches((o) => o + 1);
+        outsideTouchesRef.current += 1;
         emitEvent?.({
           type: "MISS_OUTSIDE",
           ts: Date.now(),
         });
       }
     },
-    [running, emitEvent]
+    [emitEvent]
   );
 
   useEffect(() => {
@@ -198,8 +245,28 @@ export default function GridOrientationGame({
     document.addEventListener("click", handleOutsideClick);
     return () => {
       document.removeEventListener("click", handleOutsideClick);
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+      if (autoStopTimeoutRef.current) {
+        clearTimeout(autoStopTimeoutRef.current);
+      }
     };
   }, [initGrid, handleOutsideClick]);
+
+  const styles = useMemo(
+    () => ({
+      blue: "#1A4E8A",
+      red: "#D50032",
+      green: "#00A499",
+      yellow: "#F2A900",
+      orange: "#F2A900",
+      gray: "#1D1D1D",
+      white: "#FFFFFF",
+      black: "#1D1D1D",
+    }),
+    []
+  );
 
   return (
     <div
@@ -208,18 +275,21 @@ export default function GridOrientationGame({
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "#1A4E8A",
-        color: "#fff",
+        background: styles.blue,
+        color: styles.white,
         padding: 16,
         gap: 12,
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ fontSize: 20, fontWeight: 600, zIndex: 100 }}>{name}</div>
-        <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
-          session: {sessionId || "–"} · task: {taskId}
+        <div className={"game-stats"}>
+          <span className={"me-2"}>Rozsvíceno: {grid.filter((g) => g).length}</span>
+          <span className={"me-2"}>Chyby: {errorsRef.current}</span>
+          <span className={"me-2"}>Mimo: {outsideTouchesRef.current}</span>
         </div>
       </div>
+
       {!running ? <div className={"game-overlay"}></div> : ""}
       {description && !running ? (
         <div
@@ -229,11 +299,11 @@ export default function GridOrientationGame({
       ) : (
         ""
       )}
+
       <div
         style={{
           display: "flex",
           gap: 12,
-          color: "#fff",
           alignItems: "center",
           height: "50px",
         }}
@@ -246,8 +316,8 @@ export default function GridOrientationGame({
               padding: "8px 16px",
               borderRadius: 16,
               background: "#fff",
-              color: "#000",
-              border: "4px solid #000",
+              color: styles.black,
+              border: `4px solid ${styles.black}`,
               position: "fixed",
               top: "50%",
               left: "50%",
@@ -255,7 +325,7 @@ export default function GridOrientationGame({
               width: "200px",
               height: "100px",
               zIndex: 100,
-              opacity: 0.9,
+              opacity: 0.8,
               fontSize: 24,
               fontWeight: 600,
               display: "flex",
@@ -274,52 +344,59 @@ export default function GridOrientationGame({
             style={{
               padding: "8px 16px",
               borderRadius: 16,
-              background: "#fff",
-              color: "#000",
-              border: "4px solid #000",
+              background: styles.white,
+              color: styles.black,
+              border: `4px solid ${styles.black}`,
               cursor: "pointer",
               userSelect: "none",
               fontWeight: 600,
             }}
           >
-            Stop ( {timeLeft}s )
+            Stop ({timeLeft}s)
           </button>
         )}
-        <div>Rozsvíceno: {grid.filter((g) => g).length}</div>
-        <div>Chyby: {errors}</div>
-        <div>Mimo: {outsideTouches}</div>
       </div>
 
+      {/* Čtvercová hrací plocha 10×10 */}
       <div
+        ref={stageRef}
         style={{
-          flex: 1,
+          margin: "auto",
+          width: "100vmin",
+          height: "100vmin",
           display: "grid",
-          gridTemplateColumns: "repeat(10, 1fr)",
-          gridTemplateRows: "repeat(10, 1fr)",
-          gap: 4,
+          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+          gridTemplateRows: `repeat(${GRID_SIZE}, 1fr)`,
+          gap: gridSizePx.gap,
           background: "#0D2B55",
-          borderRadius: 12,
+          borderRadius: 20,
           padding: 8,
         }}
       >
-        {grid.map((isOn, idx) => (
-          <button
-            key={idx}
-            className="grid-cell"
-            onClick={(ev) => handleClick(idx, ev)}
-            style={{
-              background: isOn ? "#4ADE80" : "#fff",
-              border: "2px solid #333",
-              borderRadius: 8,
-              cursor: running ? "pointer" : "default",
-            }}
-          />
-        ))}
-      </div>
-
-      <div style={{ fontSize: 12, opacity: 0.85, display: "none" }}>
-        Dotkněte se co nejvíce čtverců během 1 minuty. Vyhýbejte se opakovaným a
-        mimo mřížku.
+        {grid.map((isOn, idx) => {
+          const bg = isOn ? styles.green : styles.white;
+          const border = isOn ? `2px solid ${styles.black}` : "2px solid #ccc";
+          
+          return (
+            <button
+              key={idx}
+              id={`cell-${idx}`}
+              className="grid-cell"
+              onClick={(ev) => handleClick(idx, ev)}
+              disabled={!running}
+              style={{
+                border,
+                background: bg,
+                borderRadius: 8,
+                cursor: running ? "pointer" : "default",
+                userSelect: "none",
+                fontSize: 24,
+                fontWeight: 700,
+                color: "#ffffff",
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );
