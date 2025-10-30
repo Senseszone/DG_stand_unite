@@ -1,14 +1,18 @@
-// src/components/ColorReactionGame.jsx
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * ColorReactionGame – Go/No-Go
- * Zelený = klikni (GO), Červený = neklikej (NO-GO)
- * - 10×10 grid
- * - 50 stimulů (1 aktivní v čase)
- * - Náhodná doba zobrazení 500–1500 ms
- * - Adaptivní reakční limit (počáteční 800 ms)
- * - Loguje zásahy, chyby, missy, reakční časy a vzdálenosti
+ * Go/No-Go (green = GO, red = NO-GO)
+ * - 10x10 grid
+ * - 1–3 současných podnětů
+ * - náhodná doba zobrazení 500–1500 ms
+ * - počáteční reakční limit 800 ms (adaptivně se mění)
+ * - 50 podnětů celkem (každý podnět = 1 zobrazený čtverec)
+ * Loguje:
+ * - Reaction_Time_List (jen pro správné zásahy zelených)
+ * - Miss log (zmeškané zelené)
+ * - Errors (klik na červený / mimo GO okno)
+ * - Accuracy, Distance_Error (px) pro zelené zásahy
+ * - Adaptivní křivku (vývoj reactionWindowMs)
  */
 export default function ColorReactionGame({
                                             sessionId,
@@ -26,14 +30,14 @@ export default function ColorReactionGame({
 
   const runningState = useRef(false);
   const [running, setRunning] = useState(false);
-  const [gridSizePx] = useState(() => ({ gap: 4 })); // pro budoucí škálování
+  const [gridSizePx] = useState(() => ({ gap: 4 }));
 
   // stimuly ve hře [{id, idx, color:'green'|'red', shownAt, expiresAt, timeoutId}]
   const [stimuli, setStimuli] = useState([]);
   const totalShownRef = useRef(0);
 
   // metriky
-  const reactionWindowMsRef = useRef(800); // adaptivní limit na reakci
+  const reactionWindowMsRef = useRef(800);
   const displayMinMsRef = useRef(500);
   const displayMaxMsRef = useRef(1500);
 
@@ -41,9 +45,9 @@ export default function ColorReactionGame({
   const errorsRef = useRef(0);
   const missesRef = useRef(0);
 
-  const reactionListRef = useRef([]); // jen zelené správné hity
-  const distanceListRef = useRef([]); // px pro zelené hity
-  const adaptHistoryRef = useRef([800]); // vývoj limitu
+  const reactionListRef = useRef([]);
+  const distanceListRef = useRef([]);
+  const adaptHistoryRef = useRef([800]);
 
   const startTsRef = useRef(null);
   const stageRef = useRef(null);
@@ -60,7 +64,6 @@ export default function ColorReactionGame({
   const rowColToIdx = (row, col) => row * GRID_SIZE + col;
 
   const pickIndex = useCallback(() => {
-    // 50 % blízko posledního, 50 % úplně jinde
     const near = Math.random() < 0.5 && lastPlacedIdxRef.current !== null;
     if (!near || lastPlacedIdxRef.current === null) {
       return randInt(0, GRID_SIZE * GRID_SIZE - 1);
@@ -152,7 +155,6 @@ export default function ColorReactionGame({
     });
   }, [emitEvent, emitScore, taskId, sessionId, clearAllTimeouts]);
 
-  // adaptivní obtížnost: po každých 8 zelených podnětech zhodnoť výkon
   const adaptDifficulty = useCallback(() => {
     const last8 = reactionListRef.current.slice(-8);
     const goodSpeed =
@@ -186,16 +188,14 @@ export default function ColorReactionGame({
   }, [emitEvent]);
 
   const queueSpawn = useCallback(() => {
-    // spawnuj s krátkým rozptylem, aby nevznikly "vlny"
     const jitter = randInt(30, 120);
     window.setTimeout(() => {
       if (!runningState.current) return;
       setStimuli((prev) => {
         if (prev.length >= MAX_ACTIVE) return prev;
         if (totalShownRef.current >= TOTAL_STIMULI) return prev;
-
-        // spawn nového stimulu
-        const color = Math.random() < 0.6 ? "green" : "red"; // víc GO než NO-GO
+        
+        const color = Math.random() < 0.6 ? "green" : "red";
         const idx = pickIndex();
         lastPlacedIdxRef.current = idx;
 
@@ -212,8 +212,6 @@ export default function ColorReactionGame({
           setStimuli((prevStim) => {
             const stim = prevStim.find((s) => s.id === id);
             if (!stim) return prevStim;
-            // vypršel
-            // pokud byl zelený a nebyl zasažen → miss
             if (stim.color === "green") {
               missesRef.current += 1;
               emitEvent?.({
@@ -223,11 +221,9 @@ export default function ColorReactionGame({
               });
             }
             const next = prevStim.filter((s) => s.id !== id);
-            // doplň další, pokud je prostor a stále běží
             if (totalShownRef.current < TOTAL_STIMULI && runningState.current) {
               queueSpawn();
             }
-            // pokud skončily všechny a už jsme ukázali 50, ukonči
             if (totalShownRef.current >= TOTAL_STIMULI && next.length === 0) {
               stop();
             }
@@ -242,7 +238,7 @@ export default function ColorReactionGame({
           ts: shownAt,
           data: { id, idx, color, displayMs: displayDur },
         });
-
+        
         return [...prev, newStim];
       });
     }, jitter);
@@ -251,7 +247,7 @@ export default function ColorReactionGame({
   const spawnStimulus = useCallback(() => {
     if (!runningState.current) return;
     if (totalShownRef.current >= TOTAL_STIMULI) return;
-
+    
     queueSpawn();
   }, [queueSpawn]);
 
@@ -262,21 +258,17 @@ export default function ColorReactionGame({
     const ts = nowMs();
     startTsRef.current = ts;
     emitEvent?.({ type: "START", ts, data: { sessionId, taskId } });
-    // inicialní nástřel
     for (let i = 0; i < MAX_ACTIVE; i++) queueSpawn();
   }, [queueSpawn, reset, sessionId, taskId, emitEvent]);
 
-  // klik na buňku
   const onCellClick = useCallback(
     (cellIdx, ev) => {
       if (!runningState.current) return;
-
+      
       setStimuli((currentStimuli) => {
-        // najdi stimulus v dané buňce (preferuj zelený, pokud je víc)
         const activeHere = currentStimuli.filter((s) => s.idx === cellIdx);
-
+        
         if (activeHere.length === 0) {
-          // klik bez podnětu = chyba
           errorsRef.current += 1;
           emitEvent?.({
             type: "ERROR_EMPTY",
@@ -285,19 +277,17 @@ export default function ColorReactionGame({
           });
           return currentStimuli;
         }
-
+        
         const greenFirst =
           activeHere.find((s) => s.color === "green") || activeHere[0];
         const stim = greenFirst;
 
-        // spočti reaction time proti zobrazení stimulu
         const rt = Math.round(
           performance.now() - (stim._perfShownAt || performance.now())
         );
         const withinWindow =
           nowMs() - stim.shownAt <= reactionWindowMsRef.current;
 
-        // spočti vzdálenost od středu
         const stage = stageRef.current;
         let distPx = 0;
         if (stage) {
@@ -317,7 +307,6 @@ export default function ColorReactionGame({
           }
         }
 
-        // vyhodnocení
         if (stim.color === "green" && withinWindow) {
           hitsRef.current += 1;
           reactionListRef.current.push(rt);
@@ -333,7 +322,6 @@ export default function ColorReactionGame({
             },
           });
         } else {
-          // klik na červený, nebo pozdě po zeleném
           errorsRef.current += 1;
           emitEvent?.({
             type: "ERROR",
@@ -348,32 +336,27 @@ export default function ColorReactionGame({
           });
         }
 
-        // zruš timeout a odstraň kliknutý stimulus (pouze ten jeden)
         clearTimeout(stim.timeoutId);
         const next = currentStimuli.filter((s) => s.id !== stim.id);
-
-        // doplň další, pokud je prostor
+        
         if (runningState.current && totalShownRef.current < TOTAL_STIMULI) {
           queueSpawn();
         }
-
-        // pokud konec
+        
         if (totalShownRef.current >= TOTAL_STIMULI && next.length === 0) {
           stop();
         }
 
-        // lehké průběžné ladění obtížnosti
         if ((hitsRef.current + errorsRef.current + missesRef.current) % 8 === 0) {
           adaptDifficulty();
         }
-
+        
         return next;
       });
     },
     [adaptDifficulty, stop, queueSpawn, emitEvent]
   );
 
-  // označ stimulu performance čas po mountu do gridu (pro přesnější RT)
   useEffect(() => {
     if (stimuli.length === 0) return;
     setStimuli((prev) =>
@@ -403,7 +386,6 @@ export default function ColorReactionGame({
 
   return (
     <div
-      ref={stageRef}
       style={{
         width: "100vw",
         height: "100vh",
@@ -423,6 +405,7 @@ export default function ColorReactionGame({
           <span className={"me-2"}>Minul: {missesRef.current}</span>
         </div>
       </div>
+
       {!running ? <div className={"game-overlay"}></div> : ""}
       {description && !running ? (
         <div
@@ -432,6 +415,7 @@ export default function ColorReactionGame({
       ) : (
         ""
       )}
+
       <div
         style={{
           display: "flex",
@@ -487,9 +471,11 @@ export default function ColorReactionGame({
             Stop
           </button>
         )}
-
       </div>
+
+      {/* Čtvercová hrací plocha 10×10 */}
       <div
+        ref={stageRef}
         style={{
           margin: "auto",
           width: "100vmin",
@@ -506,12 +492,14 @@ export default function ColorReactionGame({
         {Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, idx) => {
           const here = stimuli.filter((s) => s.idx === idx);
           const show = here.find((s) => s.color === "green") || here[0] || null;
-          const bg = show ? (show.color === "green" ? "#4ADE80" : "#F87171") : "#fff";
-          const border = show
+          const bg = show
             ? show.color === "green"
-              ? "2px solid #065F46"
-              : "2px solid #7F1D1D"
-            : "2px solid #D50032";
+              ? styles.green
+              : styles.red
+            : "#fff";
+          const border = show
+            ? "2px solid #000"
+            : "2px solid #ccc";
 
           return (
             <button
@@ -522,15 +510,18 @@ export default function ColorReactionGame({
               style={{
                 border,
                 background: bg,
-                borderRadius: 10,
-                aspectRatio: "1 / 1",
+                borderRadius: 8,
                 cursor: running ? "pointer" : "default",
                 userSelect: "none",
+                fontSize: 24,
+                fontWeight: 700,
+                color: "#ffffff",
               }}
             />
           );
         })}
       </div>
+
     </div>
   );
 }

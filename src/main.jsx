@@ -17,10 +17,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     {/*  config={{ squareSizePx: 96, layout: "row" }}*/}
     {/*/>*/}
 
-    <ColorReactionGame
+    <ColorReactionWaitGame
         sessionId="demo-session"
         emitEvent={(e) => console.log("EVENT", e)}
         emitScore={(s) => console.log("SCORE", s)}
-    ></ColorReactionGame>
+    ></ColorReactionWaitGame>
   </React.StrictMode>
 );

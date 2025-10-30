@@ -448,7 +448,7 @@ export default function ColorReactionWaitGame({ sessionId, taskId, emitEvent, em
       >
         {Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, idx) => {
           const active = stimuli[0] && stimuli[0].idx === idx ? stimuli[0] : null;
-          const bg = active ? (active.color === "green" ? "#4ADE80" : "#F87171") : "#fff";
+          const bg = active ? (active.color === "green" ? styles.green : styles.red) : "#fff";
           const border = active
             ? "2px solid #000" : "2px solid #ccc";
           return (
