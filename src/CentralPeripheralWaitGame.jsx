@@ -32,6 +32,7 @@ export default function CentralPeripheralWaitGame({
   const [running, setRunning] = useState(false);
   const [centralStim, setCentralStim] = useState(null);
   const [peripheralStim, setPeripheralStim] = useState(null);
+  const [distractors, setDistractors] = useState([]); // nové
   const [trialCount, setTrialCount] = useState(0);
 
   const stageRef = useRef(null);
@@ -75,6 +76,7 @@ export default function CentralPeripheralWaitGame({
   const reset = useCallback(() => {
     setCentralStim(null);
     setPeripheralStim(null);
+    setDistractors([]);
     setTrialCount(0);
     trialCountRef.current = 0;
     hitsRef.current = 0;
@@ -147,13 +149,26 @@ export default function CentralPeripheralWaitGame({
 
       const quadrant = quadrants[randInt(0, 3)];
       const targetIdx = randInt(0, GRID_SIZE * GRID_SIZE - 1);
+      
+      // Určíme barvu distraktorů - jinou než je cílová
+      const distractorColor = stimColor === styles.green ? styles.blue : styles.green;
+      
+      // Vytvoříme distraktory pro ostatní tři kvadranty
+      const otherQuadrants = quadrants.filter(q => q !== quadrant);
+      const newDistractors = otherQuadrants.map(q => ({
+        quadrant: q,
+        idx: randInt(0, GRID_SIZE * GRID_SIZE - 1),
+        color: distractorColor
+      }));
+      
       setPeripheralStim({ color: stimColor, quadrant, idx: targetIdx });
+      setDistractors(newDistractors);
       reactionStartRef.current = performance.now();
 
       emitEvent?.({
         type: "PERIPH_STIM",
         ts: nowMs(),
-        data: { quadrant, idx: targetIdx, color: stimColor },
+        data: { quadrant, idx: targetIdx, color: stimColor, distractors: newDistractors },
       });
     }, DELAY_BETWEEN);
   }, [stop, emitEvent, TOTAL_TRIALS, GRID_SIZE, styles.green, styles.blue]);
@@ -195,6 +210,7 @@ export default function CentralPeripheralWaitGame({
 
       setCentralStim(null);
       setPeripheralStim(null);
+      setDistractors([]);
 
       // OPRAVA: použij callback formu setState
       setTrialCount((currentCount) => {
@@ -219,6 +235,9 @@ export default function CentralPeripheralWaitGame({
       peripheralStim && peripheralStim.quadrant === quad
         ? peripheralStim
         : null;
+    
+    // Najdi distraktor pro tento kvadrant
+    const distractor = distractors.find(d => d.quadrant === quad);
 
     return (
       <div
@@ -236,10 +255,18 @@ export default function CentralPeripheralWaitGame({
       >
         {Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, idx) => {
           const isActive = active && active.idx === idx;
-          const bg = isActive ? active.color : styles.white;
-          const border = isActive
-            ? `2px solid ${styles.black}`
-            : "2px solid #ccc";
+          const isDistractor = distractor && distractor.idx === idx;
+          
+          let bg = styles.white;
+          let border = "2px solid #ccc";
+          
+          if (isActive) {
+            bg = active.color;
+            border = `2px solid ${styles.black}`;
+          } else if (isDistractor) {
+            bg = distractor.color;
+            border = `2px solid ${styles.black}`;
+          }
 
           return (
             <button
@@ -356,43 +383,63 @@ export default function CentralPeripheralWaitGame({
         )}
       </div>
 
-      {/* Main game area - 4 grids full screen */}
+      {/* Main game area - 4 grids with central stimulus */}
       <div
         ref={stageRef}
         style={{
           flex: 1,
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gridTemplateRows: "1fr 1fr",
+          gridTemplateColumns: "1fr 20vmin 1fr",
+          gridTemplateRows: "1fr 20vmin 1fr",
           gap: 16,
           position: "relative",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        {/* 4 Peripheral grids */}
-        {quadrants.map((q) => (
-          <div key={q} style={{ width: "100%", height: "100%" }}>
-            {renderGrid(q)}
-          </div>
-        ))}
+        {/* Kvadrant A - levý horní */}
+        <div style={{ width: "100%", height: "100%", gridColumn: "1", gridRow: "1" }}>
+          {renderGrid("A")}
+        </div>
 
-        {/* Central stimulus */}
-        {centralStim && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              width: "min(20vw, 20vh)",
-              height: "min(20vw, 20vh)",
-              background: centralStim.color,
-              border: `4px solid ${styles.white}`,
-              borderRadius: 16,
-              transform: "translate(-50%, -50%)",
-              zIndex: 10,
-              boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
-            }}
-          />
-        )}
+        {/* Kvadrant B - pravý horní */}
+        <div style={{ width: "100%", height: "100%", gridColumn: "3", gridRow: "1" }}>
+          {renderGrid("B")}
+        </div>
+
+        {/* Centrální podnět - uprostřed */}
+        <div
+          style={{
+            gridColumn: "2",
+            gridRow: "2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {centralStim && (
+            <div
+              style={{
+                width: "18vmin",
+                height: "18vmin",
+                background: centralStim.color,
+                border: `4px solid ${styles.white}`,
+                borderRadius: 16,
+                boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
+              }}
+            />
+          )}
+        </div>
+
+        {/* Kvadrant C - levý dolní */}
+        <div style={{ width: "100%", height: "100%", gridColumn: "1", gridRow: "3" }}>
+          {renderGrid("C")}
+        </div>
+
+        {/* Kvadrant D - pravý dolní */}
+        <div style={{ width: "100%", height: "100%", gridColumn: "3", gridRow: "3" }}>
+          {renderGrid("D")}
+        </div>
       </div>
     </div>
   );

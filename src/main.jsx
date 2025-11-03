@@ -10,6 +10,7 @@ import ColorReactionWaitGame from './ColorReactionWaitGame.jsx';
 import SaccadicLineReactionGame from './SaccadicLineReactionGame.jsx';
 import ColorReactionEdgesGame from './ColorReactionEdgesGame.jsx';
 import CentralPeripheralWaitGame from './CentralPeripheralWaitGame.jsx';
+import CentralPeripheralSpanGame from './CentralPeripheralSpanGame.jsx';
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
