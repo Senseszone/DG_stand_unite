@@ -43,6 +43,7 @@ export default function ColorReactionEdgesGame({
   const displayMinMsRef = useRef(500);
   const displayMaxMsRef = useRef(1500);
   const startTsRef = useRef(null);
+  const lastColorRef = useRef(null); // nové - sledování poslední barvy
 
   const randInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
   const nowMs = () => Date.now();
@@ -138,18 +139,30 @@ export default function ColorReactionEdgesGame({
     const jitter = randInt(30, 120);
     setTimeout(() => {
       if (!runningState.current) return;
-      setStimuli((prev) => {
-        if (prev.length >= MAX_ACTIVE) return prev;
-        // OPRAVA: kontroluj PŘED inkrementací
-        if (totalShownRef.current >= TOTAL_STIMULI) {
-          // pokud už není co zobrazovat a není žádný aktivní stimulus, ukonči hru
+      
+      // OPRAVA: kontroluj PŘED vytvořením stimulu
+      if (totalShownRef.current >= TOTAL_STIMULI) {
+        setStimuli((prev) => {
           if (prev.length === 0) {
             setTimeout(() => stop(), 0);
           }
           return prev;
-        }
+        });
+        return;
+      }
 
-        const color = Math.random() < 0.6 ? "green" : "red";
+      // OPRAVA: vyber barvu PŘED setStimuli, aby se lastColorRef správně aktualizoval
+      let color;
+      if (lastColorRef.current === "red") {
+        color = "green"; // pokud byl poslední červený, musí být zelený
+      } else {
+        color = Math.random() < 0.5 ? "green" : "red";
+      }
+      lastColorRef.current = color; // uložíme HNED
+      
+      setStimuli((prev) => {
+        if (prev.length >= MAX_ACTIVE) return prev;
+
         const idx = pickEdgeIndex();
 
         const shownAt = nowMs();
@@ -203,6 +216,7 @@ export default function ColorReactionEdgesGame({
     reactionWindowMsRef.current = 800;
     adaptHistoryRef.current = [800];
     startTsRef.current = null;
+    lastColorRef.current = null; // nové
   }, [clearAllTimeouts]);
 
   const start = useCallback(() => {

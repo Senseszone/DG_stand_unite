@@ -52,6 +52,7 @@ export default function ColorReactionGame({
   const startTsRef = useRef(null);
   const stageRef = useRef(null);
   const lastPlacedIdxRef = useRef(null);
+  const lastColorRef = useRef(null); // nové - sledování poslední barvy
 
   // helpers
   const randInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -97,7 +98,8 @@ export default function ColorReactionGame({
 
     startTsRef.current = null;
     lastPlacedIdxRef.current = null;
-  }, [clearAllTimeouts]);
+    lastColorRef.current = null; // nové
+  }, []);
 
   const stop = useCallback(() => {
     runningState.current = false;
@@ -191,11 +193,30 @@ export default function ColorReactionGame({
     const jitter = randInt(30, 120);
     window.setTimeout(() => {
       if (!runningState.current) return;
+      
+      // Kontrola limitu před vytvořením stimulu
+      if (totalShownRef.current >= TOTAL_STIMULI) {
+        setStimuli((prev) => {
+          if (prev.length === 0) {
+            setTimeout(() => stop(), 0);
+          }
+          return prev;
+        });
+        return;
+      }
+
+      // OPRAVA: vyber barvu PŘED setStimuli, aby se lastColorRef správně aktualizoval
+      let color;
+      if (lastColorRef.current === "red") {
+        color = "green"; // pokud byl poslední červený, musí být zelený
+      } else {
+        color = Math.random() < 0.6 ? "green" : "red";
+      }
+      lastColorRef.current = color; // uložíme HNED
+      
       setStimuli((prev) => {
         if (prev.length >= MAX_ACTIVE) return prev;
-        if (totalShownRef.current >= TOTAL_STIMULI) return prev;
         
-        const color = Math.random() < 0.6 ? "green" : "red";
         const idx = pickIndex();
         lastPlacedIdxRef.current = idx;
 
