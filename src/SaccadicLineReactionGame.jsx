@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 /**
  * SaccadicLineReactionGame
  * - Bod se pohybuje po řádku (zleva doprava, pak zprava doleva)
- * - Na každém řádku 3× krátce rozsvítí zeleně (1/3, 2/3, konec)
+ * - Na každém řádku 4-6× krátce rozsvítí zeleně (náhodný počet, rovnoměrně rozložené)
  * - Hráč klikne při rozsvícení
  * - Po kliknutí skočí na další řádek a rychlost se adaptuje podle výkonu
  */
@@ -29,6 +29,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
   const waitingForClickRef = useRef(false); // čeká na klik hráče
   const currentHighlightRef = useRef(0); // kolikátý highlight na řádku
   const stageRef = useRef(null); // ref na herní plochu
+  const highlightsPerLineRef = useRef([]); // pole s počty highlightů pro každý řádek
 
   const hitsRef = useRef(0);
   const errorsRef = useRef(0);
@@ -36,12 +37,13 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
   const lineRef = useRef(0);
   const directionRef = useRef(1);
   const runningRef = useRef(false);
-  
-  const SPEED_MIN = 250;
-  const SPEED_MAX = 900;
-  const GRID_GAP = 100;
-  const TOTAL_LINES = 6;
-  const HIGHLIGHTS_PER_LINE = 3; // 3 rozsvícení na řádek
+
+  const SPEED_MIN = 800;
+  const SPEED_MAX = 2000;
+  const GRID_GAP = 50;
+  const TOTAL_LINES = 21;
+  const MIN_HIGHLIGHTS = 4; // minimální počet highlightů na řádek
+  const MAX_HIGHLIGHTS = 6; // maximální počet highlightů na řádek
   const DOT_SIZE = 40; // velikost bodu
 
   const randInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -70,6 +72,15 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
     return 800; // fallback
   }, []);
 
+  // generuje náhodný počet highlightů pro každý řádek
+  const generateHighlightsPerLine = useCallback(() => {
+    const highlights = [];
+    for (let i = 0; i < TOTAL_LINES; i++) {
+      highlights.push(randInt(MIN_HIGHLIGHTS, MAX_HIGHLIGHTS));
+    }
+    return highlights;
+  }, [TOTAL_LINES, MIN_HIGHLIGHTS, MAX_HIGHLIGHTS]);
+
   // synchronizace refs
   useEffect(() => {
     lineRef.current = line;
@@ -89,7 +100,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
     waitingForClickRef.current = true; // POZASTAVIT pohyb, čekat na klik
     setColor(styles.green);
     colorChangeTsRef.current = performance.now();
-    
+
     // automaticky zhasne po 400ms
     setTimeout(() => {
       if (waitingForClickRef.current) {
@@ -97,7 +108,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
         colorOnRef.current = false;
         waitingForClickRef.current = false;
         setColor(styles.white);
-        
+
         // pokračuj v pohybu nebo přejdi na další řádek
         continueOrNextLine();
       }
@@ -107,14 +118,15 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
   // pokračuje v pohybu nebo přejde na další řádek
   const continueOrNextLine = useCallback(() => {
     currentHighlightRef.current += 1;
-    
-    if (currentHighlightRef.current >= HIGHLIGHTS_PER_LINE) {
-      // už byly 3 highlighty, přejít na další řádek
+    const currentLineHighlights = highlightsPerLineRef.current[lineRef.current] || MIN_HIGHLIGHTS;
+
+    if (currentHighlightRef.current >= currentLineHighlights) {
+      // už byly všechny highlighty na tomto řádku, přejít na další řádek
       setLine((currentLine) => {
         const nextLine = currentLine + 1;
         lineRef.current = nextLine;
         currentHighlightRef.current = 0;
-        
+
         if (nextLine >= TOTAL_LINES) {
           stop();
           return currentLine;
@@ -123,24 +135,24 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
         setDirection((currentDir) => {
           const nextDir = -currentDir;
           directionRef.current = nextDir;
-          
+
           // restartuj pozici pro další řádek
           const stageWidth = getStageWidth();
           setPos({
             x: nextDir === 1 ? 0 : stageWidth - DOT_SIZE,
             y: nextLine * GRID_GAP
           });
-          
+
           setTimeout(() => {
             if (runningRef.current) {
               lastFrameRef.current = performance.now();
               animationRef.current = requestAnimationFrame(animate);
             }
           }, 400);
-          
+
           return nextDir;
         });
-        
+
         return nextLine;
       });
     } else {
@@ -150,7 +162,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
         animationRef.current = requestAnimationFrame(animate);
       }
     }
-  }, [HIGHLIGHTS_PER_LINE, TOTAL_LINES, GRID_GAP, getStageWidth]);
+  }, [MIN_HIGHLIGHTS, TOTAL_LINES, GRID_GAP, getStageWidth]);
 
   // adaptivní změna rychlosti podle reakce
   const adaptSpeed = useCallback((rt) => {
@@ -163,7 +175,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
     setRunning(false);
     runningRef.current = false;
     waitingForClickRef.current = false;
-    
+
     const avg =
       reactionTimesRef.current.length > 0
         ? Math.round(
@@ -194,19 +206,35 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
   const animate = useCallback(
     (ts) => {
       if (!runningRef.current || waitingForClickRef.current) return; // POZASTAVIT při čekání na klik
-      
+
       const delta = (ts - lastFrameRef.current) / 1000;
       lastFrameRef.current = ts;
 
       setPos((prev) => {
         const stageWidth = getStageWidth();
         const maxX = stageWidth - DOT_SIZE;
-        
+
         let newX = prev.x + directionRef.current * speedRef.current * delta;
         let newY = lineRef.current * GRID_GAP;
 
+        // OMEZENÍ pohybu - bod nesmí opustit kontejner
+        if (directionRef.current === 1) {
+          // pohyb doprava
+          newX = Math.min(newX, maxX);
+        } else {
+          // pohyb doleva
+          newX = Math.max(newX, 0);
+        }
+
         // zkontroluj, zda jsme dosáhli prahové hodnoty pro highlight
-        const thresholds = [0.33, 0.66, 0.95].map((f) => f * maxX);
+        const currentLineHighlights = highlightsPerLineRef.current[lineRef.current] || MIN_HIGHLIGHTS;
+
+        // generuj rovnoměrně rozložené prahové hodnoty podle počtu highlightů
+        const thresholds = Array.from({ length: currentLineHighlights }, (_, i) => {
+          const fraction = (i + 1) / (currentLineHighlights + 1);
+          return fraction * maxX;
+        });
+
         const targetThreshold = thresholds[currentHighlightRef.current];
 
         if (targetThreshold !== undefined) {
@@ -219,7 +247,9 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
             cancelAnimationFrame(animationRef.current);
             triggerHighlight();
             const finalX = directionRef.current === 1 ? targetThreshold : maxX - targetThreshold;
-            return { x: finalX, y: newY };
+            // OMEZENÍ finální pozice
+            const clampedX = Math.max(0, Math.min(maxX, finalX));
+            return { x: clampedX, y: newY };
           }
         }
 
@@ -230,7 +260,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
         animationRef.current = requestAnimationFrame(animate);
       }
     },
-    [triggerHighlight, getStageWidth, GRID_GAP]
+    [triggerHighlight, getStageWidth, GRID_GAP, MIN_HIGHLIGHTS]
   );
 
   // klik hráče
@@ -248,7 +278,8 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
         data: { 
           reactionMs: rt, 
           line: lineRef.current,
-          highlight: currentHighlightRef.current + 1
+          highlight: currentHighlightRef.current + 1,
+          totalHighlights: highlightsPerLineRef.current[lineRef.current]
         } 
       });
       adaptSpeed(rt);
@@ -285,6 +316,9 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
     currentHighlightRef.current = 0;
     waitingForClickRef.current = false;
     
+    // vygeneruj náhodné počty highlightů pro všechny řádky
+    highlightsPerLineRef.current = generateHighlightsPerLine();
+    
     setRunning(true);
     runningRef.current = true;
     setLine(0);
@@ -297,7 +331,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
     startTsRef.current = nowMs();
     emitEvent?.({ type: "START", ts: nowMs(), data: { sessionId, taskId } });
     animationRef.current = requestAnimationFrame(animate);
-  }, [animate, sessionId, taskId, emitEvent, styles.white]);
+  }, [animate, sessionId, taskId, emitEvent, styles.white, generateHighlightsPerLine]);
 
   useEffect(() => () => {
     cancelAnimationFrame(animationRef.current);
@@ -444,7 +478,8 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
           }}
         >
           <div>Speed: {Math.round(speedRef.current)} px/s</div>
-          <div>Highlight: {currentHighlightRef.current + 1}/{HIGHLIGHTS_PER_LINE}</div>
+          <div>Highlight: {currentHighlightRef.current + 1}/{highlightsPerLineRef.current[lineRef.current] || MIN_HIGHLIGHTS}</div>
+          <div>Line highlights: {JSON.stringify(highlightsPerLineRef.current)}</div>
         </div>
       </div>
     </div>
