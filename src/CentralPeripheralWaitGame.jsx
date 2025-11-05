@@ -388,57 +388,67 @@ export default function CentralPeripheralWaitGame({
         ref={stageRef}
         style={{
           flex: 1,
-          display: "grid",
-          gridTemplateColumns: "1fr 20vmin 1fr",
-          gridTemplateRows: "1fr 20vmin 1fr",
-          gap: 16,
-          position: "relative",
+          display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          position: "relative",
         }}
       >
-        {/* Kvadrant A - levý horní */}
-        <div style={{ width: "100%", height: "100%", gridColumn: "1", gridRow: "1" }}>
-          {renderGrid("A")}
-        </div>
-
-        {/* Kvadrant B - pravý horní */}
-        <div style={{ width: "100%", height: "100%", gridColumn: "3", gridRow: "1" }}>
-          {renderGrid("B")}
-        </div>
-
-        {/* Centrální podnět - uprostřed */}
         <div
           style={{
-            gridColumn: "2",
-            gridRow: "2",
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "30vmin 15vmin 30vmin",
+            gridTemplateRows: "30vmin 15vmin 30vmin",
+            gap: 16,
             alignItems: "center",
-            justifyContent: "center",
+            justifyItems: "center",
           }}
         >
-          {centralStim && (
-            <div
-              style={{
-                width: "18vmin",
-                height: "18vmin",
-                background: centralStim.color,
-                border: `4px solid ${styles.white}`,
-                borderRadius: 16,
-                boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
-              }}
-            />
-          )}
-        </div>
+          {/* Kvadrant A - levý horní */}
+          <div style={{ gridColumn: "1", gridRow: "1", width: "30vmin", height: "30vmin", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {renderGrid("A")}
+          </div>
 
-        {/* Kvadrant C - levý dolní */}
-        <div style={{ width: "100%", height: "100%", gridColumn: "1", gridRow: "3" }}>
-          {renderGrid("C")}
-        </div>
+          {/* Kvadrant B - pravý horní */}
+          <div style={{ gridColumn: "3", gridRow: "1", width: "30vmin", height: "30vmin", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {renderGrid("B")}
+          </div>
 
-        {/* Kvadrant D - pravý dolní */}
-        <div style={{ width: "100%", height: "100%", gridColumn: "3", gridRow: "3" }}>
-          {renderGrid("D")}
+          {/* Centrální podnět - uprostřed */}
+          <div
+            style={{
+              gridColumn: "2",
+              gridRow: "2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "15vmin",
+              height: "15vmin",
+            }}
+          >
+            {centralStim && (
+              <div
+                style={{
+                  width: "13vmin",
+                  height: "13vmin",
+                  background: centralStim.color,
+                  border: `4px solid ${styles.white}`,
+                  borderRadius: 16,
+                  boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
+                }}
+              />
+            )}
+          </div>
+
+          {/* Kvadrant C - levý dolní */}
+          <div style={{ gridColumn: "1", gridRow: "3", width: "30vmin", height: "30vmin", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {renderGrid("C")}
+          </div>
+
+          {/* Kvadrant D - pravý dolní */}
+          <div style={{ gridColumn: "3", gridRow: "3", width: "30vmin", height: "30vmin", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {renderGrid("D")}
+          </div>
         </div>
       </div>
     </div>
