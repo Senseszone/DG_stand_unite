@@ -40,7 +40,7 @@ export default function SaccadicLineReactionGame({ sessionId, taskId, emitEvent,
 
   const SPEED_MIN = 800;
   const SPEED_MAX = 2000;
-  const GRID_GAP = 50;
+  const GRID_GAP = 30;
   const TOTAL_LINES = 21;
   const MIN_HIGHLIGHTS = 4; // minimální počet highlightů na řádek
   const MAX_HIGHLIGHTS = 6; // maximální počet highlightů na řádek
